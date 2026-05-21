@@ -1,0 +1,6 @@
+Django>=5.0,<6.0
+channels>=4.0
+daphne>=4.1
+google-genai>=0.3.0
+python-dotenv>=1.0
+whitenoise>=6.6

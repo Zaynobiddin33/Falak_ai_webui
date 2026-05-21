@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard · SuvRadar AI{% endblock %}
+{% block body_class %}dash{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
+{% endblock %}
+
+{% block body %}
+
+<!-- ════════════════════════════════════════ TOP BAR ════════════════════════════════════════ -->
+<header class="topbar">
+  <div class="topbar-left">
+    <a href="{% url 'core:landing' %}" class="topbar-logo">
+      <span class="logo-mark"></span>
+      <span>SuvRadar<span class="logo-accent">.AI</span></span>
+    </a>
+    <span class="topbar-divider"></span>
+    <div class="region-picker">
+      <span class="region-flag">🇺🇿</span>
+      <div class="region-text">
+        <small>Region</small>
+        <b>Fergana Valley</b>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+  </div>
+
+  <div class="topbar-center">
+    <div class="metric-toggle" id="metricToggle">
+      <button data-metric="iri" class="active">IRI</button>
+      <button data-metric="ndvi">NDVI</button>
+      <button data-metric="moisture">Moisture</button>
+      <button data-metric="stress">Stress</button>
+    </div>
+  </div>
+
+  <div class="topbar-right">
+    <div class="date-pill">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span id="topbarDate">—</span>
+    </div>
+    <button class="icon-btn" id="layerToggleMobile" title="Layers">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    </button>
+    <button class="icon-btn chat-fab" id="chatToggleMobile" title="Chat with Suv">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════ DASH GRID ════════════════════════════════════════ -->
+<div class="dash">
+
+  <!-- LEFT: data layers -->
+  <aside class="panel panel-layers" id="layersPanel">
+    <div class="panel-head">
+      <h3>Data Layers</h3>
+      <button class="close-btn" id="layersClose">×</button>
+    </div>
+
+    <div class="panel-section">
+      <div class="ps-title">Vegetation</div>
+      <label class="layer-row"><input type="checkbox" checked data-layer="ndvi"><span>NDVI</span><span class="layer-dot c-leaf"></span></label>
+      <label class="layer-row"><input type="checkbox" data-layer="ndmi"><span>NDMI</span><span class="layer-dot c-cyan"></span></label>
+    </div>
+
+    <div class="panel-section">
+      <div class="ps-title">Water</div>
+      <label class="layer-row"><input type="checkbox" checked data-layer="moisture"><span>Soil Moisture</span><span class="layer-dot c-water"></span></label>
+      <label class="layer-row"><input type="checkbox" data-layer="ndwi"><span>NDWI</span><span class="layer-dot c-water-dark"></span></label>
+      <label class="layer-row"><input type="checkbox" data-layer="rivers"><span>River buffer</span><span class="layer-dot c-water"></span></label>
+    </div>
+
+    <div class="panel-section">
+      <div class="ps-title">Climate</div>
+      <label class="layer-row"><input type="checkbox" data-layer="rainfall"><span>Rainfall 30d</span><span class="layer-dot c-warn"></span></label>
+      <label class="layer-row"><input type="checkbox" data-layer="temperature"><span>Temperature</span><span class="layer-dot c-danger"></span></label>
+      <label class="layer-row"><input type="checkbox" data-layer="et"><span>Evapotranspiration</span><span class="layer-dot c-orange"></span></label>
+    </div>
+
+    <div class="panel-section">
+      <div class="ps-title">Geography</div>
+      <label class="layer-row"><input type="checkbox" data-layer="elevation"><span>Elevation</span><span class="layer-dot c-grey"></span></label>
+      <label class="layer-row"><input type="checkbox" data-layer="districts"><span>District lines</span><span class="layer-dot c-purple"></span></label>
+    </div>
+
+    <div class="panel-section">
+      <div class="ps-title">Background</div>
+      <div class="bg-toggle" id="bgToggle">
+        <button data-bg="dark" class="active">Dark</button>
+        <button data-bg="satellite">Satellite</button>
+        <button data-bg="street">Street</button>
+      </div>
+      <div class="grid-opacity">
+        <label>Grid opacity</label>
+        <input type="range" min="20" max="90" value="65" id="opacityRange"/>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="ps-title">Priority queue</div>
+      <div id="priorityList" class="priority-list">Loading…</div>
+    </div>
+  </aside>
+
+  <!-- CENTER: map + bottom stats -->
+  <main class="center-pane">
+
+    <div class="map-wrap">
+      <div id="map"></div>
+
+      <!-- Floating top-right info card on selected cell -->
+      <div class="cell-card" id="cellCard">
+        <div class="cc-empty">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.6"><path d="M12 22s-8-4.5-8-12a8 8 0 1116 0c0 7.5-8 12-8 12z"/><circle cx="12" cy="10" r="3"/></svg>
+          <p>Click any 1 km cell to inspect its stats</p>
+        </div>
+      </div>
+
+      <!-- Map legend -->
+      <div class="legend" id="legend">
+        <div class="legend-head"><span id="legendLabel">Irrigation Risk Index</span></div>
+        <div class="legend-bar"></div>
+        <div class="legend-labels"><small>Low / Healthy</small><small>High / Stress</small></div>
+      </div>
+    </div>
+
+    <!-- BOTTOM STATS STRIP -->
+    <section class="stats-strip" id="statsStrip">
+      <div class="stat-card" id="card-iri">
+        <div class="sc-head"><span class="sc-title">IRI Score</span><span class="sc-tag" data-class>—</span></div>
+        <div class="sc-value"><b data-value>—</b></div>
+        <canvas class="sc-spark" data-spark="iri"></canvas>
+      </div>
+      <div class="stat-card" id="card-ndvi">
+        <div class="sc-head"><span class="sc-title">NDVI</span></div>
+        <div class="sc-value"><b data-value>—</b></div>
+        <canvas class="sc-spark" data-spark="ndvi"></canvas>
+      </div>
+      <div class="stat-card" id="card-moisture">
+        <div class="sc-head"><span class="sc-title">Soil Moisture</span></div>
+        <div class="sc-value"><b data-value>—</b><small>%</small></div>
+        <canvas class="sc-spark" data-spark="moisture"></canvas>
+      </div>
+      <div class="stat-card" id="card-rain">
+        <div class="sc-head"><span class="sc-title">Rainfall 30d</span></div>
+        <div class="sc-value"><b data-value>—</b><small>mm</small></div>
+        <canvas class="sc-spark" data-spark="rainfall"></canvas>
+      </div>
+      <div class="stat-card" id="card-temp">
+        <div class="sc-head"><span class="sc-title">Temperature</span></div>
+        <div class="sc-value"><b data-value>—</b><small>°C</small></div>
+        <canvas class="sc-spark" data-spark="temperature"></canvas>
+      </div>
+      <div class="stat-card" id="card-crop">
+        <div class="sc-head"><span class="sc-title">Dominant Crop</span></div>
+        <div class="sc-value sc-value-text"><b data-value>—</b></div>
+        <div class="sc-foot" data-foot>Pick a cell to begin</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- RIGHT: chat panel -->
+  <aside class="panel panel-chat" id="chatPanel">
+    <div class="panel-head">
+      <div class="chat-head-info">
+        <div class="chat-avatar">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 7v5l3 2"/>
+          </svg>
+        </div>
+        <div>
+          <h3>Suv <span class="status-dot" id="wsStatus" title="Connecting…"></span></h3>
+          <small>Agricultural advisor · Fergana Valley</small>
+        </div>
+      </div>
+      <button class="close-btn" id="chatClose">×</button>
+    </div>
+
+    <div class="chat-context" id="chatContext">
+      <small>Context</small>
+      <span id="contextLabel">No cell selected — answers will be general.</span>
+    </div>
+
+    <div class="chat-body" id="chatBody">
+      <div class="msg msg-ai">
+        <div class="msg-bubble">
+          Salom! I'm <b>Suv</b>, your irrigation and agronomy advisor for Fergana Valley.
+          Pick any 1 km cell on the map and ask me anything — what to plant, what pests
+          to watch for, what the IRI score means for the next 72 hours, or what farmers
+          downstream should do.
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-suggestions" id="chatSuggestions">
+      <button class="suggestion">What can I plant here?</button>
+      <button class="suggestion">Pest risks?</button>
+      <button class="suggestion">Irrigation advice</button>
+      <button class="suggestion">Animals that may damage crops?</button>
+    </div>
+
+    <form class="chat-form" id="chatForm">
+      <textarea id="chatInput" placeholder="Ask Suv anything about this area…" rows="1" maxlength="2000"></textarea>
+      <button type="submit" class="chat-send" id="chatSend" title="Send">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </button>
+    </form>
+  </aside>
+
+  <!-- mobile backdrop -->
+  <div class="dash-backdrop" id="dashBackdrop"></div>
+</div>
+
+<script>
+  window.FALAK = {
+    aoi: {{ aoi|safe }},
+    districts: {{ districts|safe }},
+    apiCell: "{% url 'dashboard:api_cell' %}",
+    apiPriority: "{% url 'dashboard:api_priority' %}",
+    wsUrl: (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws/chat/",
+  };
+</script>
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="{% static 'js/map.js' %}"></script>
+  <script src="{% static 'js/stats.js' %}"></script>
+  <script src="{% static 'js/chat.js' %}"></script>
+  <script src="{% static 'js/dashboard.js' %}"></script>
+{% endblock %}

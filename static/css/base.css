@@ -1,0 +1,165 @@
+/* ════════════════════════════════════════════════════════════════
+   SuvRadar / Falak — Base design system
+   ════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* color tokens */
+  --bg-0: #07090f;
+  --bg-1: #0a0e17;
+  --bg-2: #10151f;
+  --bg-3: #161c2a;
+  --bg-card: #131826;
+  --surface: rgba(20, 26, 40, 0.65);
+  --surface-strong: #161c2a;
+
+  --border: #232a3d;
+  --border-soft: #1c2233;
+  --border-bright: #2f3a55;
+
+  --text-0: #ffffff;
+  --text-1: #e8ecf4;
+  --text-2: #b6bdcd;
+  --text-3: #8b94a8;
+  --text-4: #5f6779;
+
+  --water-0: #4cb7ff;
+  --water-1: #2196ff;
+  --water-2: #1376d8;
+  --water-3: #0a4d96;
+
+  --leaf-0: #4ade80;
+  --leaf-1: #22c55e;
+  --leaf-2: #16a34a;
+
+  --warn-0: #facc15;
+  --warn-1: #f59e0b;
+
+  --danger-0: #f97316;
+  --danger-1: #ef4444;
+  --danger-2: #b91c1c;
+
+  /* type */
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, monospace;
+
+  /* radii */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --r-pill: 999px;
+
+  /* shadows */
+  --shadow-1: 0 2px 6px rgba(0,0,0,0.3);
+  --shadow-2: 0 8px 24px rgba(0,0,0,0.4);
+  --shadow-3: 0 20px 60px rgba(0,0,0,0.5);
+  --shadow-water: 0 0 40px rgba(33, 150, 255, 0.25);
+
+  /* layout */
+  --container: 1240px;
+  --gutter: 28px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg-1);
+  color: var(--text-1);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body { min-height: 100vh; overflow-x: hidden; }
+
+a {
+  color: var(--water-0);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+a:hover { color: var(--water-1); }
+
+button { font-family: inherit; cursor: pointer; }
+
+img, svg { display: block; max-width: 100%; }
+
+h1, h2, h3, h4 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-0);
+}
+
+::selection { background: rgba(33, 150, 255, 0.35); color: #fff; }
+
+/* ─── Buttons ───────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-radius: var(--r-md);
+  font-weight: 500;
+  font-size: 14px;
+  border: 1px solid transparent;
+  transition: transform 0.15s, background 0.15s, border-color 0.15s;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn:active { transform: translateY(1px); }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--water-1), var(--water-2));
+  color: white;
+  box-shadow: var(--shadow-water);
+}
+.btn-primary:hover { background: linear-gradient(135deg, var(--water-0), var(--water-1)); color: white; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-2);
+  border-color: var(--border);
+}
+.btn-ghost:hover { color: var(--text-0); border-color: var(--border-bright); background: var(--bg-2); }
+
+.btn-lg { padding: 14px 26px; font-size: 15px; }
+
+/* ─── Logo mark ─────────────────────────────────────────────── */
+.logo-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background:
+    radial-gradient(circle at 30% 30%, var(--water-0), var(--water-2) 60%, var(--water-3));
+  box-shadow: 0 0 14px rgba(76, 183, 255, 0.5), inset 0 0 8px rgba(255,255,255,0.2);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ─── Color text helpers ─────────────────────────────────────── */
+.text-water { color: var(--water-0); }
+.text-leaf  { color: var(--leaf-0); }
+.text-red   { color: var(--danger-1); }
+.text-warn  { color: var(--warn-0); }
+.text-muted { color: var(--text-3); }
+
+/* ─── Reusable section heading ───────────────────────────────── */
+.section-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--water-0);
+  padding: 5px 12px;
+  border: 1px solid rgba(76, 183, 255, 0.25);
+  border-radius: var(--r-pill);
+  background: rgba(33, 150, 255, 0.06);
+}
