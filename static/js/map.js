@@ -58,7 +58,7 @@
   let cells = [];
   let field = {};
   let selectedCell = null;
-  let currentMetric = "h7";
+  let currentMetric = "current";
   let gridOpacity = 0.65;
   let drawTimer = null;
   let metricDomains = {};
@@ -70,7 +70,7 @@
     [overlayBoundsConfig.north, overlayBoundsConfig.east],
   ];
   const rasterOverlay = L.imageOverlay(
-    F.suvradarOverlays?.[currentMetric] || F.suvradarOverlays?.h7,
+    F.suvradarOverlays?.[currentMetric] || F.suvradarOverlays?.current,
     overlayBounds,
     {
       opacity: gridOpacity,
@@ -289,6 +289,26 @@
     return { HIGH: "YUQORI", MEDIUM: "O'RTACHA", LOW: "PAST" }[cls] || cls;
   }
 
+  function changeClass(delta) {
+    if (delta >= 5) return "trend-worse";
+    if (delta <= -5) return "trend-better";
+    return "trend-stable";
+  }
+
+  function signed(value) {
+    const number = Number(value || 0);
+    return `${number >= 0 ? "+" : ""}${number.toFixed(1)}`;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
   function cropLabel(cell) {
     const crop = v(cell, "crop");
     const water = v(cell, "water");
@@ -348,11 +368,11 @@
   }
 
   async function enrichStats(stats) {
-    const horizon = currentMetric === "h14" ? 14 : 7;
-    const cacheKey = `${stats.lat.toFixed(4)},${stats.lng.toFixed(4)},${horizon}`;
+    const horizon = currentMetric === "h14" || currentMetric === "change14" ? 14 : 7;
+    const cacheKey = `${stats.lat.toFixed(4)},${stats.lng.toFixed(4)},${horizon},${currentMetric}`;
     if (cachedCells.has(cacheKey)) return cachedCells.get(cacheKey);
     try {
-      const res = await fetch(`${F.apiCell}?lat=${stats.lat}&lng=${stats.lng}&horizon=${horizon}`);
+      const res = await fetch(`${F.apiCell}?lat=${stats.lat}&lng=${stats.lng}&horizon=${horizon}&view=${currentMetric}`);
       if (!res.ok) return stats;
       const enriched = await res.json();
       cachedCells.set(cacheKey, enriched);
@@ -378,9 +398,9 @@
   }
 
   async function selectLatLng(latlng) {
-    const horizon = currentMetric === "h14" ? 14 : 7;
+    const horizon = currentMetric === "h14" || currentMetric === "change14" ? 14 : 7;
     try {
-      const res = await fetch(`${F.apiCell}?lat=${latlng.lat}&lng=${latlng.lng}&horizon=${horizon}`);
+      const res = await fetch(`${F.apiCell}?lat=${latlng.lat}&lng=${latlng.lng}&horizon=${horizon}&view=${currentMetric}`);
       if (!res.ok) return;
       const stats = await res.json();
       selectedCell = { lat: stats.lat, lng: stats.lng };
@@ -419,20 +439,37 @@
   function renderCellCard(s) {
     const card = document.getElementById("cellCard");
     const cls = `cc-risk-pill pl-risk-${s.stress_class}`;
+    const current = Number(s.current_iri ?? 0);
     const h7 = Number(s.forecast_iri_h7 || 0).toFixed(1);
     const h14 = Number(s.forecast_iri_h14 || 0).toFixed(1);
+    const delta7 = Number(s.delta_iri_h7 ?? Number(h7) - current);
+    const delta14 = Number(s.delta_iri_h14 ?? Number(h14) - current);
+    const drivers = (s.drivers || []).slice(0, 4).map((d) => {
+      const tone = escapeHtml(d.tone || "neutral");
+      return `<span class="driver-chip ${tone}">${escapeHtml(d.label || d)}</span>`;
+    }).join("");
     card.innerHTML = `
       <div class="cc-head">
         <span class="cc-id">${s.id}</span>
         <span class="${cls}">${stressLabel(s.stress_class)}</span>
       </div>
+      <div class="cc-compare">
+        <div><small>Kuzatilgan</small><b>${current.toFixed(1)}</b></div>
+        <div><small>Model +7</small><b>${h7}</b></div>
+        <div><small>Model +14</small><b>${h14}</b></div>
+      </div>
+      <div class="cc-delta">
+        <span class="delta-pill ${changeClass(delta7)}"><span>Δ 7 kun</span><b>${signed(delta7)}</b></span>
+        <span class="delta-pill ${changeClass(delta14)}"><span>Δ 14 kun</span><b>${signed(delta14)}</b></span>
+      </div>
       <div class="cc-body">
         <div class="cc-row"><span>Tuman</span><span>${s.district}</span></div>
-        <div class="cc-row"><span>7/14 kun IRI</span><span>${h7} / ${h14}</span></div>
         <div class="cc-row"><span>Tuproq namligi</span><span>${Number(s.soil_moisture_pct || 0).toFixed(1)}%</span></div>
         <div class="cc-row"><span>NDVI</span><span>${Number(s.ndvi || 0).toFixed(2)}</span></div>
+        <div class="cc-row"><span>Prognoz yog'in</span><span>${Number(s.forecast_rain_7d_mm || 0).toFixed(1)} / ${Number(s.forecast_rain_14d_mm || 0).toFixed(1)} mm</span></div>
         <div class="cc-row"><span>Eng yaqin suv</span><span>${s.nearest_water} · ${Number(s.distance_to_water_km || 0).toFixed(1)} km</span></div>
       </div>
+      ${drivers ? `<div class="cc-drivers">${drivers}</div>` : ""}
       <div class="cc-foot">
         ${s.inspection_window_h ? `${s.inspection_window_h} soat ichida tekshiring` : "Tezkor harakat shart emas"}
       </div>
@@ -440,13 +477,19 @@
   }
 
   function updateLegend(metric) {
-    const label = {
-      h7: "7 kunlik IRI prognoz",
-      h14: "14 kunlik IRI prognoz",
-      ndvi: "NDVI · o'simlik",
-      moisture: "Tuproq namligi",
-    }[metric] || metric;
-    document.getElementById("legendLabel").textContent = label;
+    const config = {
+      current: ["Kuzatilgan suv stressi", "Pastroq stress", "Yuqoriroq stress", "stress"],
+      h7: ["Model prognozi · 7 kun", "Pastroq stress", "Yuqoriroq stress", "stress"],
+      h14: ["Model prognozi · 14 kun", "Pastroq stress", "Yuqoriroq stress", "stress"],
+      change7: ["Model Δ · 7 kun", "Yengillashadi", "Yomonlashadi", "change"],
+      change14: ["Model Δ · 14 kun", "Yengillashadi", "Yomonlashadi", "change"],
+      ndvi: ["NDVI · o'simlik", "Zaif", "Kuchli", "ndvi"],
+      moisture: ["Tuproq namligi", "Quruq", "Nam", "moisture"],
+    }[metric] || [metric, "Past", "Yuqori", "stress"];
+    document.getElementById("legendLabel").textContent = config[0];
+    document.getElementById("legendLow").textContent = config[1];
+    document.getElementById("legendHigh").textContent = config[2];
+    document.getElementById("legend").dataset.kind = config[3];
   }
 
   window.FalakMap = {
@@ -486,5 +529,6 @@
   document.getElementById("topbarDate").textContent =
     `${String(d.getDate()).padStart(2, "0")} ${months[d.getMonth()]} ${d.getFullYear()}`;
 
+  updateLegend(currentMetric);
   loadGrid();
 })();

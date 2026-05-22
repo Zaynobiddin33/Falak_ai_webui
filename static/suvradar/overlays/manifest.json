@@ -2,6 +2,34 @@
   "width": 512,
   "height": 234,
   "cell_count": 119808,
+  "fields": [
+    "lat",
+    "lon",
+    "current",
+    "h7",
+    "h14",
+    "change7",
+    "change14",
+    "ndvi",
+    "sm",
+    "rain",
+    "temp",
+    "et",
+    "crop",
+    "water",
+    "built",
+    "ndmi",
+    "ndwi",
+    "rain_anom",
+    "forecast_rain7",
+    "forecast_deficit7",
+    "forecast_temp7",
+    "forecast_et7",
+    "forecast_rain14",
+    "forecast_deficit14",
+    "forecast_temp14",
+    "forecast_et14"
+  ],
   "bounds": {
     "south": 39.59774,
     "north": 41.69979000000001,
@@ -9,21 +37,40 @@
     "east": 73.59897000000001
   },
   "domains": {
+    "current": {
+      "lo": 36.8,
+      "hi": 63.37,
+      "mode": "sequential"
+    },
     "h7": {
       "lo": 44.91,
-      "hi": 59.49
+      "hi": 59.49,
+      "mode": "sequential"
     },
     "h14": {
       "lo": 47.73,
-      "hi": 62.57
+      "hi": 62.57,
+      "mode": "sequential"
+    },
+    "change7": {
+      "lo": -18.0,
+      "hi": 18.0,
+      "mode": "diverging"
+    },
+    "change14": {
+      "lo": -18.0,
+      "hi": 18.0,
+      "mode": "diverging"
     },
     "ndvi": {
       "lo": 0.005,
-      "hi": 0.687
+      "hi": 0.687,
+      "mode": "sequential"
     },
     "moisture": {
       "lo": 0.156,
-      "hi": 0.392
+      "hi": 0.392,
+      "mode": "sequential"
     }
   }
 }

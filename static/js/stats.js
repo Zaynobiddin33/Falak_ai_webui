@@ -49,13 +49,12 @@
 
   function update(stats) {
     // Stress class card (textual + 3-segment pill keeps the strip's visual rhythm)
-    setValue("card-stress", STRESS_LABEL[stats.stress_class] || stats.stress_class, stats.stress_class);
+    const displayIri = Number(stats.display_iri ?? stats.current_iri ?? (stats.iri_score || 0) * 100);
+    setValue("card-stress", displayIri.toFixed(1), stats.stress_class);
     const pill = document.getElementById("stressPill");
     if (pill) pill.setAttribute("data-active", stats.stress_class);
     setFoot("card-stress",
-      `${stats.district} · ${stats.area_ha} ga · ${
-        stats.inspection_window_h ? stats.inspection_window_h + " soat ichida" : "tezkor harakat shart emas"
-      }`
+      `Kuzatilgan ${Number(stats.current_iri || 0).toFixed(1)} · model Δ7 ${signed(stats.delta_iri_h7)} · Δ14 ${signed(stats.delta_iri_h14)}`
     );
 
     setValue("card-ndvi",     stats.ndvi.toFixed(2));
@@ -84,6 +83,10 @@
       tag.textContent = STRESS_LABEL[cls] || cls;
       tag.className = `sc-tag ${cls}`;
     }
+  }
+  function signed(value) {
+    const number = Number(value || 0);
+    return `${number >= 0 ? "+" : ""}${number.toFixed(1)}`;
   }
   function setFoot(cardId, text) {
     const card = document.getElementById(cardId);

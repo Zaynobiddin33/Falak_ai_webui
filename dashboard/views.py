@@ -70,6 +70,97 @@ def _crop_label(row):
     return "Bare / pasture"
 
 
+def _clip(value, low=0.0, high=1.0):
+    return max(low, min(high, value))
+
+
+def _current_iri(row):
+    cached = row.get("current")
+    if cached is not None:
+        return _as_float(cached, 50)
+
+    ndvi = _as_float(row.get("ndvi"), 0.30)
+    ndmi = _as_float(row.get("ndmi"), 0.00)
+    sm = _as_float(row.get("sm"), 0.18)
+    rain = _as_float(row.get("rain"), 25.0)
+    rain_anom = _as_float(row.get("rain_anom"), 0.0)
+    temp = _as_float(row.get("temp"), 24.0)
+    et = _as_float(row.get("et"), 3.2)
+    crop = _as_float(row.get("crop"))
+    water = _as_float(row.get("water"))
+    built = _as_float(row.get("built"))
+
+    canopy_dry = _clip((0.22 - ndmi) / 0.52)
+    vegetation_weak = _clip((0.48 - ndvi) / 0.72)
+    soil_dry = _clip((0.30 - sm) / 0.30)
+    rain_deficit = _clip((-rain_anom) / 80.0) if rain_anom < 0 else _clip((35.0 - rain) / 35.0) * 0.45
+    atmospheric_demand = 0.55 * _clip((temp - 28.0) / 12.0) + 0.45 * _clip(et / 6.0)
+    raw = 100.0 * (
+        0.30 * canopy_dry
+        + 0.25 * soil_dry
+        + 0.20 * vegetation_weak
+        + 0.15 * rain_deficit
+        + 0.10 * atmospheric_demand
+    )
+    if water >= 0.25:
+        raw = min(raw, 18.0)
+    elif built >= 0.25 and crop < 0.08:
+        raw = min(max(raw, 22.0), 45.0)
+    return round(_clip((35.0 + 0.60 * raw) / 100.0, 0.0, 1.0) * 100.0, 2)
+
+
+def _trend(delta):
+    if delta >= 5:
+        return "worsening"
+    if delta <= -5:
+        return "improving"
+    return "stable"
+
+
+def _driver(label, tone="neutral"):
+    return {"label": label, "tone": tone}
+
+
+def _drivers(row, current_iri, h7, h14):
+    drivers = []
+    sm_pct = _as_float(row.get("sm")) * 100
+    ndmi = _as_float(row.get("ndmi"))
+    ndvi = _as_float(row.get("ndvi"))
+    rain_anom = _as_float(row.get("rain_anom"))
+    rain7 = _as_float(row.get("forecast_rain7"))
+    deficit7 = _as_float(row.get("forecast_deficit7"))
+    temp7 = _as_float(row.get("forecast_temp7"))
+
+    if h7 - current_iri >= 5:
+        drivers.append(_driver("7 kunda stress oshmoqda", "danger"))
+    elif h7 - current_iri <= -5:
+        drivers.append(_driver("7 kunda stress pasaymoqda", "good"))
+    else:
+        drivers.append(_driver("7 kunlik o'zgarish kichik", "neutral"))
+
+    if sm_pct and sm_pct < 22:
+        drivers.append(_driver(f"Tuproq namligi past: {sm_pct:.1f}%", "danger"))
+    elif sm_pct > 32:
+        drivers.append(_driver(f"Tuproq namligi yaxshi: {sm_pct:.1f}%", "good"))
+
+    if ndmi < 0.05:
+        drivers.append(_driver(f"NDMI quruq signal: {ndmi:.2f}", "warn"))
+    if ndvi < 0.25:
+        drivers.append(_driver(f"Vegetatsiya zaif: NDVI {ndvi:.2f}", "warn"))
+    if rain_anom < -5:
+        drivers.append(_driver(f"30 kun yog'in anomaliyasi {rain_anom:+.0f}%", "warn"))
+    if deficit7 > 10:
+        drivers.append(_driver(f"7 kun suv defitsiti {deficit7:.1f} mm", "danger"))
+    elif rain7 > 35:
+        drivers.append(_driver(f"7 kun prognoz yog'in {rain7:.1f} mm", "good"))
+    if temp7 > 30:
+        drivers.append(_driver(f"7 kun issiq oynasi {temp7:.1f}°C", "warn"))
+
+    if len(drivers) < 2:
+        drivers.append(_driver("Asosiy signal model ansamblidan", "neutral"))
+    return drivers[:5]
+
+
 def _flat_series(base, n=30):
     return [round(base, 3) for _ in range(n)]
 
@@ -197,12 +288,20 @@ def _real_summary():
         return json.load(f)
 
 
-def _cell_to_stats(row, horizon_days=7):
+def _cell_to_stats(row, horizon_days=7, view_metric="h7"):
     lat = _as_float(row.get("lat"))
     lng = _as_float(row.get("lng"))
+    current = _current_iri(row)
     h7 = _as_float(row.get("h7"), 50)
     h14 = _as_float(row.get("h14"), h7)
-    raw_iri = h14 if horizon_days == 14 else h7
+    if view_metric == "current":
+        raw_iri = current
+    elif view_metric == "change14":
+        raw_iri = h14
+    elif view_metric == "change7":
+        raw_iri = h7
+    else:
+        raw_iri = h14 if horizon_days == 14 else h7
     district = nearest_district(lat, lng)
     water, distance_km = nearest_water(lat, lng)
     moisture_pct = _as_float(row.get("sm")) * 100
@@ -211,6 +310,8 @@ def _cell_to_stats(row, horizon_days=7):
     temperature = _as_float(row.get("temp"), 25)
     et = _as_float(row.get("et"), 4)
     stress = _stress_class(raw_iri)
+    delta_h7 = round(_as_float(row.get("change7"), h7 - current), 2)
+    delta_h14 = round(_as_float(row.get("change14"), h14 - current), 2)
 
     return {
         "id": f"UZB_{lat:.4f}_{lng:.4f}",
@@ -221,10 +322,17 @@ def _cell_to_stats(row, horizon_days=7):
         "oblast": district["country_oblast"],
         "area_ha": 100,
         "iri_score": round(raw_iri / 100, 3),
+        "display_iri": round(raw_iri, 2),
+        "current_iri": round(current, 2),
         "forecast_iri_h7": round(h7, 2),
         "forecast_iri_h14": round(h14, 2),
+        "delta_iri_h7": delta_h7,
+        "delta_iri_h14": delta_h14,
+        "trend_h7": _trend(delta_h7),
+        "trend_h14": _trend(delta_h14),
         "model_horizon_days": horizon_days,
         "stress_class": stress,
+        "current_stress_class": _stress_class(current),
         "priority_class": stress,
         "inspection_window_h": _inspection_window_h(raw_iri),
         "ndvi": round(ndvi, 3),
@@ -233,12 +341,19 @@ def _cell_to_stats(row, horizon_days=7):
         "soil_moisture_pct": round(moisture_pct, 1),
         "rainfall_30d_mm": round(rainfall, 1),
         "rainfall_anomaly_pct": round(_as_float(row.get("rain_anom")), 1),
+        "forecast_rain_7d_mm": round(_as_float(row.get("forecast_rain7")), 1),
+        "forecast_rain_14d_mm": round(_as_float(row.get("forecast_rain14")), 1),
+        "forecast_deficit_7d_mm": round(_as_float(row.get("forecast_deficit7")), 1),
+        "forecast_deficit_14d_mm": round(_as_float(row.get("forecast_deficit14")), 1),
+        "forecast_temp_7d_c": round(_as_float(row.get("forecast_temp7")), 1),
+        "forecast_temp_14d_c": round(_as_float(row.get("forecast_temp14")), 1),
         "temperature_c": round(temperature, 1),
         "et_mm_day": round(et, 2),
         "elevation_m": 0,
         "distance_to_water_km": round(distance_km, 2),
         "nearest_water": water["name"],
         "dominant_crop": _crop_label(row),
+        "drivers": _drivers(row, current, h7, h14),
         "history": _real_history(lat, lng, ndvi, moisture_pct, rainfall, temperature, et),
     }
 
@@ -271,9 +386,10 @@ def api_cell(request):
 
     horizon = request.GET.get("horizon", "7")
     horizon_days = 14 if horizon in {"14", "h14"} else 7
+    view_metric = request.GET.get("view", "h7")
     row = _nearest_real_cell(lat, lng)
     if row:
-        return JsonResponse(_cell_to_stats(row, horizon_days=horizon_days))
+        return JsonResponse(_cell_to_stats(row, horizon_days=horizon_days, view_metric=view_metric))
 
     return JsonResponse(compute_cell(lat, lng))
 
