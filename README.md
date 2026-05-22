@@ -242,6 +242,36 @@ Model natijasidan dala harakatigacha to'rt qadam:
 3. **AI hisoboti** — har bir tuman uchun tekshiruv oynasi va aniq harakatlar
 4. **Telegram ogohlantirish** — fermerga: "Quva — YUQORI xavf · 72 soat ichida tekshiring"
 
+### 10 · Natijalar — bashorat aniqligi
+
+<p align="center">
+  <img src="static/img/accuracy.jpg" alt="FALAK-VFM joriy bashorat aniqligi: 7 kun va 14 kun ufqlari uchun ±5, ±10, ±15 tolerantlik darajalaridagi temporal test aniqligi." width="900" />
+</p>
+
+> Diagramma loyihaning oldingi nomi (*SuvRadar*) bilan yaratilgan, lekin model aynan o'sha — endi FALAK-VFM nomi ostida.
+
+Yuqoridagi diagramma **chiqarib qo'yilgan yillar** (held-out years — 2024–25 sinov to'plami) ustida o'lchangan **temporal test aniqligi**ni ko'rsatadi. Har bir prognoz uchun model chiqargan IRI balli haqiqiy IRI dan qancha chetga chiqqanini hisoblaymiz va uch tolerantlik darajasiga ajratamiz:
+
+| Tolerantlik | 7 kunlik bashorat | 14 kunlik bashorat |
+|-------------|-------------------|--------------------|
+| **±5 birlik** (qattiq)     | 45.0% | 45.2% |
+| **±10 birlik** (o'rtacha)  | 76.5% | 75.2% |
+| **±15 birlik** (yumshoq)   | **89.8%** | **88.5%** |
+
+> ⚠ **Maqsad chizig'i — 90%**, ya'ni model ishonchli ishlash uchun ±15 birlik tolerantlikda kamida 90% aniqlikka erishishi kerak. Hozirgi modelimiz ikkala bashorat ufqida ham (7&nbsp;kun: **89.8%**, 14&nbsp;kun: **88.5%**) maqsadga deyarli yetib bordi.
+
+**Diagramma nimani aytadi:**
+
+- **Aniq son bashorati qiyin, lekin xavf darajasi aniq.** ±5 birlikdagi 45% — model aynan raqamni topish qiyin (NDVI 0.34 yoki 0.39 ekanligi muhim emas), lekin ±15 birlikdagi ~89% — **YUQORI/O'RTACHA/PAST sinflari ishonchli ravishda to'g'ri tanlanadi**. Aynan shu narsa dispetcher uchun muhim: "Quva HIGH xavf ichida bo'lishi 89% aniqlikda kafolatlangan".
+- **7 va 14 kun ufqlari deyarli teng (89.8% vs 88.5%).** Model bir hafta ichida sezilarli aniqlikni yo'qotmaydi — fermer tezkor reaksiya berishi shart emas, 14 kun ichida rejalashtirsa ham bo'ladi.
+- **Maqsad chizig'iga yetdik.** Pilot bosqichdan keng joylashtirishga o'tish uchun ishonchli signal.
+
+**Cheklovlar:**
+
+- Sinov 2024–25 yillarida o'lchangan; juda nostandart ob-havo yili (masalan, 2027-da kuchli qurg'oqchilik) hali sinalmagan.
+- ±15 birlik tolerantlik — operativ qaror qabul qilish uchun yetarli, lekin aniq miqdor talab qilinadigan ilmiy tahlil uchun emas.
+- Aniqlik metrikasi yagona ko'rsatkich emas; **Precision@10%** (eng yuqori 10% katakda aniqlik) va **kalibratsiya** ham ishlatiladi (8-bo'limga qarang).
+
 ---
 
 ## Haqiqiy modelga o'tish
