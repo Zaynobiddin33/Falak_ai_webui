@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════════
-   Chat · WebSocket client + streaming render
+   Chat · WebSocket client + streaming render (Uzbek)
    ════════════════════════════════════════════════════════════════ */
 
 (function () {
@@ -14,23 +14,28 @@
   const contextLabel = document.getElementById("contextLabel");
   const suggestionEls = document.querySelectorAll(".suggestion");
 
+  const STRESS_LABEL = { HIGH: "YUQORI", MEDIUM: "O'RTACHA", LOW: "PAST" };
+
   let ws = null;
-  let cellStats = null;
+  let cellStats = null;             // persists across reconnects
   let streamingMsgEl = null;
   let streamingBuffer = "";
   let thinkingEl = null;
   let reconnectAttempt = 0;
+  let isComposing = false;          // IME composition guard (Uzbek Cyrillic / others)
 
   // ─── WebSocket lifecycle ─────────────────────────────────────
   function connect() {
     ws = new WebSocket(F.wsUrl);
-    statusDot.title = "Connecting…";
+    statusDot.title = "Ulanmoqda…";
     statusDot.className = "status-dot";
 
     ws.onopen = () => {
       reconnectAttempt = 0;
       statusDot.className = "status-dot online";
-      statusDot.title = "Connected to Suv";
+      statusDot.title = "Suv bilan ulangan";
+      // Re-send last selected cell so server-side grounding survives reconnects
+      if (cellStats) send({ type: "select_cell", stats: cellStats });
     };
 
     ws.onmessage = (e) => {
@@ -41,12 +46,12 @@
 
     ws.onerror = () => {
       statusDot.className = "status-dot offline";
-      statusDot.title = "Connection error";
+      statusDot.title = "Ulanish xatosi";
     };
 
     ws.onclose = () => {
       statusDot.className = "status-dot offline";
-      statusDot.title = "Disconnected — retrying";
+      statusDot.title = "Uzilgan — qayta ulanmoqda";
       const delay = Math.min(8000, 800 * Math.pow(2, reconnectAttempt++));
       setTimeout(connect, delay);
     };
@@ -63,8 +68,7 @@
     if (data.type === "ai_chunk") {
       if (!streamingMsgEl) startStreamingMessage();
       streamingBuffer += data.text;
-      const html = formatMarkdownLite(streamingBuffer);
-      streamingMsgEl.querySelector(".msg-bubble").innerHTML = html;
+      streamingMsgEl.querySelector(".msg-bubble").innerHTML = formatMarkdownLite(streamingBuffer);
       scrollToBottom();
     } else if (data.type === "ai_done") {
       streamingMsgEl = null;
@@ -72,9 +76,9 @@
       sendBtn.disabled = false;
       removeThinking();
     } else if (data.type === "system") {
-      // first system message carries gemini_configured
-      if ("gemini_configured" in data && !data.gemini_configured) {
-        addSystemNotice("⚠️ Gemini API key not configured — running in demo mode. Replies are local placeholders.");
+      if ("ai_configured" in data && !data.ai_configured) {
+        const prov = (data.ai_provider || "AI").toUpperCase();
+        addSystemNotice(`⚠️ ${prov} API kaliti sozlanmagan — demo rejimida ishlamoqda. Javoblar mahalliy o'rinbosarlar.`);
       }
     } else if (data.type === "error") {
       removeThinking();
@@ -136,7 +140,7 @@
     const text = input.value.trim();
     if (!text) return;
     if (!send({ type: "user_message", text })) {
-      addError("Not connected.");
+      addError("Ulanish yo'q.");
       return;
     }
     appendUserMessage(text);
@@ -147,10 +151,19 @@
   }
 
   form.addEventListener("submit", (e) => { e.preventDefault(); submit(); });
+
+  // IME composition guard — Uzbek Cyrillic, Russian, etc. type via composition events
+  input.addEventListener("compositionstart", () => { isComposing = true; });
+  input.addEventListener("compositionend",   () => { isComposing = false; });
+
   input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); }
+    if (e.key === "Enter" && !e.shiftKey && !isComposing && !e.isComposing) {
+      e.preventDefault();
+      submit();
+    }
   });
   input.addEventListener("input", autosize);
+
   function autosize() {
     input.style.height = "auto";
     input.style.height = Math.min(120, input.scrollHeight) + "px";
@@ -169,10 +182,10 @@
     cellStats = stats;
     send({ type: "select_cell", stats });
     contextEl.classList.add("active");
+    const stressLabel = STRESS_LABEL[stats.stress_class] || stats.stress_class;
     contextLabel.innerHTML =
-      `Cell <code style="font-family:var(--font-mono);font-size:11px;color:var(--water-0)">${stats.id}</code> ` +
-      `· ${stats.district} · ${stats.dominant_crop} ` +
-      `· IRI <b>${stats.iri_score.toFixed(2)}</b> (${stats.stress_class})`;
+      `Katak <code style="font-family:var(--font-mono);font-size:11px;color:var(--water-0)">${stats.id}</code> ` +
+      `· ${stats.district} · stress balli <b>${stats.iri_score.toFixed(2)}</b> (${stressLabel})`;
   }
 
   // ─── Utilities ───────────────────────────────────────────────
@@ -185,11 +198,12 @@
   // Minimal markdown: **bold**, `code`, ### headings, - bullets, line breaks
   function formatMarkdownLite(s) {
     let html = escapeHtml(s);
+    // Strip echoed CELL_STATS json blocks before any other replacement
+    html = html.replace(/```json[\s\S]*?```/g, "");
     html = html.replace(/^### (.+)$/gm, '<h4 style="margin:6px 0 2px;font-size:13.5px;color:var(--water-0);">$1</h4>');
     html = html.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
     html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
     html = html.replace(/(?:^|\n)- (.+)/g, "<br>• $1");
-    html = html.replace(/```json[\s\S]+?```/g, "");
     html = html.replace(/```([^`]+)```/g, '<pre style="background:var(--bg-1);padding:8px 10px;border-radius:6px;font-size:12px;overflow-x:auto;">$1</pre>');
     html = html.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
     return html;

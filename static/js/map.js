@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════════
-   Map · Leaflet + 1 km IRI grid overlay
+   Map · Leaflet + 1 km grid overlay (Stress / NDVI / Moisture)
    ════════════════════════════════════════════════════════════════ */
 
 (function () {
@@ -16,7 +16,6 @@
 
   L.control.attribution({ prefix: false }).addTo(map);
 
-  // tile layers
   const tileDark = L.tileLayer(
     "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
     { attribution: "© OpenStreetMap, © CARTO", maxZoom: 19, subdomains: "abcd" }
@@ -29,54 +28,41 @@
     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     { attribution: "© OpenStreetMap", maxZoom: 19 }
   );
-
   const tilesByName = { dark: tileDark, satellite: tileSat, street: tileStreet };
   let currentBg = "dark";
   tileDark.addTo(map);
 
-  // AOI hint rectangle
+  // AOI rectangle
   const b = F.aoi.bounds;
   L.rectangle([[b.south, b.west], [b.north, b.east]], {
-    color: "#4cb7ff",
-    weight: 1.5,
-    fill: false,
-    opacity: 0.4,
-    dashArray: "6 4",
+    color: "#4cb7ff", weight: 1.5, fill: false, opacity: 0.4, dashArray: "6 4",
   }).addTo(map);
 
   // District markers
   F.districts.forEach((d) => {
     L.circleMarker([d.lat, d.lng], {
-      radius: 4,
-      color: "#a855f7",
-      fillColor: "#a855f7",
-      fillOpacity: 0.7,
-      weight: 1,
+      radius: 4, color: "#a855f7", fillColor: "#a855f7", fillOpacity: 0.7, weight: 1,
     })
-      .bindTooltip(d.name, {
-        permanent: false,
-        className: "dist-tip",
-        direction: "top",
-        offset: [0, -6],
-      })
+      .bindTooltip(d.name, { permanent: false, direction: "top", offset: [0, -6] })
       .addTo(map);
   });
 
   // ─── Grid layer + state ──────────────────────────────────────
   const gridLayer = L.layerGroup().addTo(map);
   let gridOpacity = 0.65;
-  let currentMetric = "iri";
+  let currentMetric = "stress";   // default — no more IRI in the UI
   let selectedRect = null;
-  let cachedCells = new Map(); // id -> stats
+  let selectedKey = null;         // "lat,lng" of selected cell, persists across re-renders
+  let cachedCells = new Map();
+  let lowZoomPopup = null;        // single instance, avoids stacking
 
-  // shared color scale: green → yellow → red
   function scoreToColor(s) {
     const stops = [
-      [0.0, [22, 163, 74]],
-      [0.2, [74, 222, 128]],
+      [0.0,  [22, 163, 74]],
+      [0.2,  [74, 222, 128]],
       [0.45, [250, 204, 21]],
-      [0.7, [249, 115, 22]],
-      [1.0, [185, 28, 28]],
+      [0.7,  [249, 115, 22]],
+      [1.0,  [185, 28, 28]],
     ];
     s = Math.max(0, Math.min(1, s));
     let lo = stops[0], hi = stops[stops.length - 1];
@@ -90,11 +76,9 @@
     return `rgb(${r},${g},${b})`;
   }
 
-  // Lightweight per-cell preview score so we don't need to hit the API for every visible cell.
-  // (Approximation of the server-side ml_mock — visually identical patches.)
+  // Client-side preview score — mirrors dashboard/ml_mock.py::compute_cell exactly.
+  // If you change either side, change both.
   function previewScore(lat, lng, metric) {
-    const freq1 = 18, freq2 = 12, freq3 = 8;
-    const ph1 = 1.7, ph2 = 3.1, ph3 = 0.6;
     function smooth(la, ln, freq, phase) {
       return (
         Math.sin(la * freq + phase) * Math.cos(ln * freq * 0.9 - phase * 0.7) +
@@ -109,25 +93,27 @@
       return ((h >>> 0) % 10000) / 10000;
     }
 
-    const ndviField = 0.45 + 0.35 * smooth(lat, lng, freq1, ph1);
-    const moistField = 0.30 + 0.25 * smooth(lat, lng, freq2, ph2);
-    const heat = 0.5 + 0.3 * smooth(lat, lng, freq3, ph3);
-    const rain = 0.5 + 0.4 * smooth(lat, lng, 6, 2.4);
+    const ndviField  = 0.45 + 0.35 * smooth(lat, lng, 18, 1.7);
+    const moistField = 0.30 + 0.25 * smooth(lat, lng, 12, 3.1);
+    const heatField  = 0.50 + 0.30 * smooth(lat, lng,  8, 0.6);
+    const rainField  = 0.50 + 0.40 * smooth(lat, lng,  6, 2.4);
 
-    const moisture = bound(moistField + (seed(lat, lng, "m") - 0.5) * 0.08, 0.04, 0.45);
-    const ndvi = bound(ndviField + (moisture - 0.25) * 0.4, 0.05, 0.9);
+    const moisture        = bound(moistField + (seed(lat, lng, "m") - 0.5) * 0.08, 0.04, 0.45);
+    const ndvi            = bound(ndviField + (moisture - 0.25) * 0.4, 0.05, 0.9);
+    const rainfall30      = bound(rainField * 50, 1, 90);
+    const rainfallAnomaly = -100 + rainfall30 / 35.0 * 100;
+    const et              = 2 + heatField * 5;
+
     const iri = bound(
       0.45 * (1 - moisture / 0.45) +
       0.20 * (1 - ndvi) +
-      0.20 * Math.max(0, -(-100 + (rain * 50) / 35 * 100)) / 100 +
-      0.10 * (2 + heat * 5) / 7 +
-      0.05 * 0.3
+      0.20 * Math.max(0, -rainfallAnomaly) / 100 +
+      0.15 * et / 7
     );
 
     if (metric === "ndvi")     return ndvi;
     if (metric === "moisture") return moisture / 0.45;
-    if (metric === "stress")   return iri; // same color scale
-    return iri;
+    return iri; // "stress" uses the same risk score, just visualised as classes
   }
 
   // ─── Render visible grid ─────────────────────────────────────
@@ -138,32 +124,34 @@
   }
   function _doRender() {
     gridLayer.clearLayers();
-    selectedRect = null;
+
+    // Always remove any existing low-zoom popup before deciding what to show
+    if (lowZoomPopup) { map.closePopup(lowZoomPopup); lowZoomPopup = null; }
 
     const zoom = map.getZoom();
     if (zoom < 9) {
-      L.popup({ closeButton: false, autoClose: true })
+      lowZoomPopup = L.popup({ closeButton: false, autoClose: false, closeOnClick: false })
         .setLatLng(map.getCenter())
-        .setContent(`<div style="font-size:12px">Zoom in to see the 1 km grid</div>`);
+        .setContent(`<div style="font-size:12px">Yaqinlashtiring — 1 km tarmoq paydo bo'ladi</div>`)
+        .openOn(map);
+      selectedRect = null;
       return;
     }
 
-    // Sub-sample big areas to keep DOM cheap
     const bounds = map.getBounds();
     let step = CELL_DEG;
     if (zoom <= 10) step = CELL_DEG * 2;
-    if (zoom <= 9) step = CELL_DEG * 4;
 
-    // Limit to AOI ± buffer
     const aoi = F.aoi.bounds;
     const latMin = Math.max(bounds.getSouth(), aoi.south - 0.05);
     const latMax = Math.min(bounds.getNorth(), aoi.north + 0.05);
     const lngMin = Math.max(bounds.getWest(),  aoi.west  - 0.05);
     const lngMax = Math.min(bounds.getEast(),  aoi.east  + 0.05);
 
-    // snap to grid
     const startLat = Math.floor(latMin / CELL_DEG) * CELL_DEG;
     const startLng = Math.floor(lngMin / CELL_DEG) * CELL_DEG;
+
+    let rehighlightTarget = null;
 
     for (let lat = startLat; lat < latMax; lat += step) {
       for (let lng = startLng; lng < lngMax; lng += step) {
@@ -185,14 +173,28 @@
 
         rect._cellLat = cy;
         rect._cellLng = cx;
-        rect.on("mouseover", function () { this.setStyle({ weight: 1.4, color: "rgba(255,255,255,0.7)" }); });
-        rect.on("mouseout",  function () {
+        rect._cellKey = `${cy.toFixed(4)},${cx.toFixed(4)}`;
+
+        rect.on("mouseover", function () {
+          if (this !== selectedRect) this.setStyle({ weight: 1.4, color: "rgba(255,255,255,0.7)" });
+        });
+        rect.on("mouseout", function () {
           if (this !== selectedRect) this.setStyle({ weight: 0.4, color: "rgba(255,255,255,0.06)" });
         });
         rect.on("click", function () { selectCell(this); });
 
         gridLayer.addLayer(rect);
+
+        if (selectedKey && rect._cellKey === selectedKey) rehighlightTarget = rect;
       }
+    }
+
+    // Restore selection highlight after re-render (zoom/pan)
+    if (rehighlightTarget) {
+      selectedRect = rehighlightTarget;
+      selectedRect.setStyle({ weight: 3, color: "#ffffff" }).bringToFront();
+    } else {
+      selectedRect = null;
     }
   }
 
@@ -202,12 +204,12 @@
       selectedRect.setStyle({ weight: 0.4, color: "rgba(255,255,255,0.06)" });
     }
     selectedRect = rect;
+    selectedKey = rect._cellKey;
     rect.setStyle({ weight: 3, color: "#ffffff" }).bringToFront();
 
     const lat = rect._cellLat;
     const lng = rect._cellLng;
 
-    // Fetch full stats
     let stats;
     const cacheKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
     if (cachedCells.has(cacheKey)) {
@@ -224,34 +226,29 @@
       }
     }
 
-    // Update floating cell card
     renderCellCard(stats);
-
-    // Update bottom stats
     if (window.FalakStats) window.FalakStats.update(stats);
-
-    // Update chat context + send over WS
-    if (window.FalakChat) window.FalakChat.setCellContext(stats);
+    if (window.FalakChat)  window.FalakChat.setCellContext(stats);
   }
 
   function renderCellCard(s) {
     const card = document.getElementById("cellCard");
     const cls = `cc-risk-pill pl-risk-${s.stress_class}`;
+    const stressLabel = { HIGH: "YUQORI", MEDIUM: "O'RTACHA", LOW: "PAST" }[s.stress_class] || s.stress_class;
     card.innerHTML = `
       <div class="cc-head">
         <span class="cc-id">${s.id}</span>
-        <span class="${cls}">${s.stress_class}</span>
+        <span class="${cls}">${stressLabel}</span>
       </div>
       <div class="cc-body">
-        <div class="cc-row"><span>District</span><span>${s.district}</span></div>
-        <div class="cc-row"><span>Crop</span><span>${s.dominant_crop}</span></div>
-        <div class="cc-row"><span>IRI score</span><span>${s.iri_score.toFixed(2)}</span></div>
-        <div class="cc-row"><span>Soil moisture</span><span>${s.soil_moisture_pct.toFixed(1)}%</span></div>
+        <div class="cc-row"><span>Tuman</span><span>${s.district}</span></div>
+        <div class="cc-row"><span>Stress balli</span><span>${s.iri_score.toFixed(2)}</span></div>
+        <div class="cc-row"><span>Tuproq namligi</span><span>${s.soil_moisture_pct.toFixed(1)}%</span></div>
         <div class="cc-row"><span>NDVI</span><span>${s.ndvi.toFixed(2)}</span></div>
-        <div class="cc-row"><span>Nearest water</span><span>${s.nearest_water} · ${s.distance_to_water_km.toFixed(1)} km</span></div>
+        <div class="cc-row"><span>Eng yaqin suv</span><span>${s.nearest_water} · ${s.distance_to_water_km.toFixed(1)} km</span></div>
       </div>
       <div class="cc-foot">
-        ${s.inspection_window_h ? `⚠️ Inspect within ${s.inspection_window_h}h` : "✓ No immediate action"}
+        ${s.inspection_window_h ? `⚠️ ${s.inspection_window_h} soat ichida tekshiring` : "✓ Tezkor harakat shart emas"}
       </div>
     `;
   }
@@ -267,7 +264,10 @@
     },
     setOpacity(pct) {
       gridOpacity = pct / 100;
-      gridLayer.eachLayer((l) => l.setStyle({ fillOpacity: gridOpacity }));
+      gridLayer.eachLayer((l) => {
+        const isSel = (l === selectedRect);
+        l.setStyle({ fillOpacity: gridOpacity, weight: isSel ? 3 : 0.4, color: isSel ? "#ffffff" : "rgba(255,255,255,0.06)" });
+      });
     },
     focusDistrict(name) {
       const d = F.districts.find((x) => x.name === name);
@@ -278,11 +278,11 @@
   };
 
   function updateLegend(m) {
+    // "Stress darajasi" (degree) — continuous gradient pairs with degree, not "sinf" (class)
     const lbl = {
-      iri: "Irrigation Risk Index",
-      ndvi: "NDVI (vegetation)",
-      moisture: "Soil moisture",
-      stress: "Stress class",
+      stress:   "Stress darajasi",
+      ndvi:     "NDVI · o'simlik",
+      moisture: "Tuproq namligi",
     }[m] || m;
     document.getElementById("legendLabel").textContent = lbl;
   }
@@ -291,7 +291,9 @@
   map.on("moveend zoomend", renderGrid);
   renderGrid();
 
-  // Date display
-  const fmt = new Intl.DateTimeFormat("en-GB", { year: "numeric", month: "short", day: "2-digit" });
-  document.getElementById("topbarDate").textContent = fmt.format(new Date());
+  // Date display — Uzbek month names
+  const months = ["yan", "fev", "mar", "apr", "may", "iyun", "iyul", "avg", "sen", "okt", "noy", "dek"];
+  const d = new Date();
+  document.getElementById("topbarDate").textContent =
+    `${String(d.getDate()).padStart(2, "0")} ${months[d.getMonth()]} ${d.getFullYear()}`;
 })();

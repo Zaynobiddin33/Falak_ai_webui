@@ -34,16 +34,10 @@ body.dash {
 .topbar-divider {
   width: 1px; height: 26px; background: var(--border);
 }
-.region-picker {
+.region-label {
   display: flex; align-items: center; gap: 9px;
-  padding: 6px 12px;
-  background: var(--bg-2);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--r-md);
-  cursor: pointer;
-  transition: border-color 0.15s;
+  padding: 4px 4px;
 }
-.region-picker:hover { border-color: var(--border-bright); }
 .region-flag { font-size: 16px; }
 .region-text { display: flex; flex-direction: column; line-height: 1.1; }
 .region-text small { color: var(--text-4); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
@@ -95,7 +89,7 @@ body.dash {
   transition: border-color 0.15s, color 0.15s;
 }
 .icon-btn:hover { border-color: var(--border-bright); color: var(--text-0); }
-.chat-fab { display: none; }
+.chat-fab, .layer-fab { display: none; }
 
 /* ─── Dash grid layout ───────────────────────────────────────── */
 .dash {
@@ -335,7 +329,10 @@ body.dash {
   gap: 1px;
   background: var(--border-soft);
   border-top: 1px solid var(--border-soft);
-  max-height: 130px;
+  /* Fixed strip height — must stay set, otherwise Chart.js with `responsive: true`
+     infinitely grows the canvases until they swallow the map area above. */
+  height: 132px;
+  overflow: hidden;
 }
 .stat-card {
   background: var(--bg-1);
@@ -381,12 +378,49 @@ body.dash {
   font-size: 16px;
   font-weight: 600;
 }
-.sc-spark {
-  width: 100%;
+/* Position-relative wrapper with explicit height pins Chart.js inside a known box.
+   Without this, `responsive: true` charts can grow unbounded inside a flex/grid cell
+   and push the map area to zero height. */
+.sc-spark-wrap {
+  position: relative;
   height: 36px;
+  width: 100%;
   margin-top: 2px;
 }
-.sc-foot { font-size: 11.5px; color: var(--text-3); }
+.sc-spark {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+.sc-foot {
+  font-size: 11.5px;
+  color: var(--text-3);
+  margin-top: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 3-segment categorical pill that replaces the sparkline on the Stress card,
+   so the bottom strip keeps its 6-cell visual rhythm. */
+.stress-pill {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  margin-top: 6px;
+}
+.stress-pill span {
+  height: 8px;
+  border-radius: 3px;
+  background: var(--bg-3);
+  border: 1px solid var(--border-soft);
+  transition: background 0.2s, border-color 0.2s;
+}
+.stress-pill[data-active="LOW"]    span:nth-child(1) { background: var(--leaf-1);    border-color: var(--leaf-1); }
+.stress-pill[data-active="MEDIUM"] span:nth-child(1),
+.stress-pill[data-active="MEDIUM"] span:nth-child(2) { background: var(--warn-1);    border-color: var(--warn-1); }
+.stress-pill[data-active="HIGH"]   span                { background: var(--danger-1); border-color: var(--danger-1); }
 
 /* ─── Chat panel ─────────────────────────────────────────────── */
 .panel-chat { background: linear-gradient(180deg, var(--bg-1), var(--bg-0)); }
@@ -592,6 +626,7 @@ body.dash {
   }
   .panel-layers.open { transform: translateX(0); }
   .panel-layers .close-btn { display: grid; place-items: center; }
+  .layer-fab { display: grid; place-items: center; }
 }
 
 @media (max-width: 880px) {

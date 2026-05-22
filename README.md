@@ -4,7 +4,7 @@ A Django + Channels web app that visualizes the **SuvRadar AI** (Falak) irrigati
 
 - **Landing page** — 7-section marketing site matching the slide deck (problem → solution → data → model → product → why).
 - **Dashboard** — Leaflet heatmap with a 1 km **Irrigation Risk Index (IRI)** grid. Click any cell to see its stats (NDVI, soil moisture, ET, rainfall anomaly, dominant crop, nearest river…).
-- **Suv chat** — WebSocket-backed Gemini chat that grounds every reply in the **selected cell's stats**. Ask what to plant, what pests to expect, irrigation timing, animal threats — answers cite the cell's real numbers.
+- **Suv chat** — WebSocket-backed Groq chat (default model: `llama-3.3-70b-versatile`) that grounds every reply in the **selected cell's stats**. Ask what to plant, what pests to expect, irrigation timing, animal threats — answers cite the cell's real numbers. Default reply language is **Uzbek**; will switch to Russian/English if asked in those.
 - **Mock ML service** — deterministic, spatially-coherent IRI/NDVI/moisture generator. Swap it for the real model service whenever you have one.
 
 ---
@@ -32,9 +32,9 @@ python manage.py runserver 0.0.0.0:8000
 
 Open <http://localhost:8000/> for the landing, <http://localhost:8000/dashboard/> for the dashboard.
 
-> **Without a Gemini key**, the chat runs in **demo mode** — it returns a deterministic, helpful local answer that cites the selected cell's stats. The UI flow is fully testable.
+> **Without a Groq key**, the chat runs in **demo mode** — it returns a deterministic, helpful local answer (in Uzbek) that cites the selected cell's stats. The UI flow is fully testable.
 >
-> **With a key**, set `GEMINI_API_KEY` in `.env`. Get one at <https://aistudio.google.com/app/apikey>. The default model is `gemini-2.5-flash` (configurable via `GEMINI_MODEL`).
+> **With a key**, set `GROQ_API_KEY` in `.env`. Get a free one at <https://console.groq.com/keys>. The default model is `llama-3.3-70b-versatile` (configurable via `GROQ_MODEL`).
 
 ---
 
@@ -57,7 +57,7 @@ falak_site/
 │   ├── views.py           ← page + REST endpoints
 │   ├── urls.py
 │   ├── consumers.py       ← WebSocket chat consumer
-│   ├── gemini_client.py   ← async Gemini streaming wrapper
+│   ├── ai_client.py       ← async Groq streaming wrapper
 │   ├── ml_mock.py         ← per-cell IRI / NDVI / moisture mock generator
 │   ├── regions.py         ← Fergana district + river anchors
 │   └── templates/dashboard/dashboard.html
@@ -84,10 +84,11 @@ falak_site/
 4. **Consumer** (`dashboard/consumers.py`)
    - Async `AsyncJsonWebsocketConsumer`.
    - Stores the latest `cell_stats` in scope; prefixes the user message with a JSON `CELL_STATS` block so Gemini's reply always cites the selected area's numbers.
-5. **Gemini client** (`dashboard/gemini_client.py`)
-   - Uses the `google-genai` SDK and `generate_content_stream`.
-   - Detailed `SYSTEM_INSTRUCTION` describing Fergana crops, regional pests, animals, irrigation logic.
-   - Graceful fallback when no API key is set — keeps the demo functional without external calls.
+5. **AI client** (`dashboard/ai_client.py`)
+   - Uses the `groq` SDK (`AsyncGroq.chat.completions.create(..., stream=True)`).
+   - Detailed Uzbek `SYSTEM_INSTRUCTION` describing Fergana crops, regional pests, animals, irrigation logic.
+   - Graceful Uzbek fallback when no API key is set — keeps the demo functional without external calls.
+   - To swap providers later (OpenAI, Anthropic, etc.), replace this one file — `consumers.py` only talks to its `get_client()` and `stream()` interface.
 
 ---
 

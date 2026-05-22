@@ -19,13 +19,13 @@ AOI = {
 }
 
 DISTRICTS = [
-    {"name": "Quva",      "lat": 40.521, "lng": 72.082, "country_oblast": "Fergana"},
-    {"name": "Yazyavan",  "lat": 40.616, "lng": 71.700, "country_oblast": "Fergana"},
-    {"name": "Rishton",   "lat": 40.358, "lng": 71.282, "country_oblast": "Fergana"},
-    {"name": "Dang'ara",  "lat": 40.498, "lng": 70.927, "country_oblast": "Fergana"},
-    {"name": "Oltiariq",  "lat": 40.376, "lng": 71.235, "country_oblast": "Fergana"},
-    {"name": "Marg'ilon", "lat": 40.471, "lng": 71.724, "country_oblast": "Fergana"},
-    {"name": "Fergana",   "lat": 40.389, "lng": 71.787, "country_oblast": "Fergana"},
+    {"name": "Quva",      "lat": 40.521, "lng": 72.082, "country_oblast": "Farg'ona"},
+    {"name": "Yozyovon",  "lat": 40.616, "lng": 71.700, "country_oblast": "Farg'ona"},
+    {"name": "Rishton",   "lat": 40.358, "lng": 71.282, "country_oblast": "Farg'ona"},
+    {"name": "Dang'ara",  "lat": 40.498, "lng": 70.927, "country_oblast": "Farg'ona"},
+    {"name": "Oltiariq",  "lat": 40.376, "lng": 71.235, "country_oblast": "Farg'ona"},
+    {"name": "Marg'ilon", "lat": 40.471, "lng": 71.724, "country_oblast": "Farg'ona"},
+    {"name": "Farg'ona",  "lat": 40.389, "lng": 71.787, "country_oblast": "Farg'ona"},
     {"name": "Andijon",   "lat": 40.781, "lng": 72.348, "country_oblast": "Andijon"},
     {"name": "Asaka",     "lat": 40.642, "lng": 72.243, "country_oblast": "Andijon"},
     {"name": "Namangan",  "lat": 40.998, "lng": 71.673, "country_oblast": "Namangan"},

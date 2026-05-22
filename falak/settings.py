@@ -13,9 +13,15 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-insecure-key-change-me")
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
 
-# Gemini config
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+# Groq config — accept GROQ_API_KEY (preferred), GROQ_API, or `GROQ_API ` (with the trailing
+# space some editors add when writing key-value pairs) so the user doesn't have to fight the env file.
+GROQ_API_KEY = (
+    os.getenv("GROQ_API_KEY")
+    or os.getenv("GROQ_API")
+    or os.getenv("GROQ_API ")
+    or ""
+).strip()
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
 INSTALLED_APPS = [
     "daphne",

@@ -19,7 +19,7 @@ from typing import Optional
 
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
-from .gemini_client import get_client
+from .ai_client import get_client
 
 log = logging.getLogger(__name__)
 
@@ -33,10 +33,12 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         self.history: list[dict] = []
         self.streaming = False
         await self.accept()
+        client = get_client()
         await self.send_json({
             "type": "system",
             "text": "connected",
-            "gemini_configured": get_client().configured,
+            "ai_configured": client.configured,
+            "ai_provider": client.provider,
         })
 
     async def disconnect(self, code):
@@ -92,7 +94,6 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             full = "".join(collected).strip()
             if full:
                 self.history.append({"role": "model", "text": full})
-            # Trim history
             if len(self.history) > MAX_HISTORY:
                 self.history = self.history[-MAX_HISTORY:]
             self.streaming = False

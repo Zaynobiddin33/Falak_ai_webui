@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Dashboard · SuvRadar AI{% endblock %}
+{% block title %}Panel · FALAK{% endblock %}
 {% block body_class %}dash{% endblock %}
 
 {% block head %}
@@ -16,25 +16,23 @@
   <div class="topbar-left">
     <a href="{% url 'core:landing' %}" class="topbar-logo">
       <span class="logo-mark"></span>
-      <span>SuvRadar<span class="logo-accent">.AI</span></span>
+      <span>FALAK</span>
     </a>
     <span class="topbar-divider"></span>
-    <div class="region-picker">
+    <div class="region-label" aria-label="Tanlangan hudud">
       <span class="region-flag">🇺🇿</span>
       <div class="region-text">
-        <small>Region</small>
-        <b>Fergana Valley</b>
+        <small>Hudud</small>
+        <b>Farg'ona vodiysi</b>
       </div>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
     </div>
   </div>
 
   <div class="topbar-center">
-    <div class="metric-toggle" id="metricToggle">
-      <button data-metric="iri" class="active">IRI</button>
-      <button data-metric="ndvi">NDVI</button>
-      <button data-metric="moisture">Moisture</button>
-      <button data-metric="stress">Stress</button>
+    <div class="metric-toggle" id="metricToggle" role="tablist" aria-label="Xarita metrikasi">
+      <button data-metric="stress" class="active" role="tab" aria-selected="true">Stress</button>
+      <button data-metric="ndvi" role="tab" aria-selected="false">NDVI</button>
+      <button data-metric="moisture" role="tab" aria-selected="false">Namlik</button>
     </div>
   </div>
 
@@ -43,10 +41,10 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
       <span id="topbarDate">—</span>
     </div>
-    <button class="icon-btn" id="layerToggleMobile" title="Layers">
+    <button class="icon-btn layer-fab" id="layerToggleMobile" type="button" aria-label="Qatlamlar panelini ochish">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
     </button>
-    <button class="icon-btn chat-fab" id="chatToggleMobile" title="Chat with Suv">
+    <button class="icon-btn chat-fab" id="chatToggleMobile" type="button" aria-label="Suhbatni ochish">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
     </button>
   </div>
@@ -56,54 +54,54 @@
 <div class="dash">
 
   <!-- LEFT: data layers -->
-  <aside class="panel panel-layers" id="layersPanel">
+  <aside class="panel panel-layers" id="layersPanel" aria-label="Ma'lumot qatlamlari">
     <div class="panel-head">
-      <h3>Data Layers</h3>
-      <button class="close-btn" id="layersClose">×</button>
+      <h3>Ma'lumot qatlamlari</h3>
+      <button class="close-btn" id="layersClose" type="button" aria-label="Qatlamlar panelini yopish">×</button>
     </div>
 
     <div class="panel-section">
-      <div class="ps-title">Vegetation</div>
+      <div class="ps-title">O'simlik</div>
       <label class="layer-row"><input type="checkbox" checked data-layer="ndvi"><span>NDVI</span><span class="layer-dot c-leaf"></span></label>
       <label class="layer-row"><input type="checkbox" data-layer="ndmi"><span>NDMI</span><span class="layer-dot c-cyan"></span></label>
     </div>
 
     <div class="panel-section">
-      <div class="ps-title">Water</div>
-      <label class="layer-row"><input type="checkbox" checked data-layer="moisture"><span>Soil Moisture</span><span class="layer-dot c-water"></span></label>
+      <div class="ps-title">Suv</div>
+      <label class="layer-row"><input type="checkbox" checked data-layer="moisture"><span>Tuproq namligi</span><span class="layer-dot c-water"></span></label>
       <label class="layer-row"><input type="checkbox" data-layer="ndwi"><span>NDWI</span><span class="layer-dot c-water-dark"></span></label>
-      <label class="layer-row"><input type="checkbox" data-layer="rivers"><span>River buffer</span><span class="layer-dot c-water"></span></label>
+      <label class="layer-row"><input type="checkbox" data-layer="rivers"><span>Daryo buferi</span><span class="layer-dot c-water"></span></label>
     </div>
 
     <div class="panel-section">
-      <div class="ps-title">Climate</div>
-      <label class="layer-row"><input type="checkbox" data-layer="rainfall"><span>Rainfall 30d</span><span class="layer-dot c-warn"></span></label>
-      <label class="layer-row"><input type="checkbox" data-layer="temperature"><span>Temperature</span><span class="layer-dot c-danger"></span></label>
-      <label class="layer-row"><input type="checkbox" data-layer="et"><span>Evapotranspiration</span><span class="layer-dot c-orange"></span></label>
+      <div class="ps-title">Iqlim</div>
+      <label class="layer-row"><input type="checkbox" data-layer="rainfall"><span>Yog'in (30 kun)</span><span class="layer-dot c-warn"></span></label>
+      <label class="layer-row"><input type="checkbox" data-layer="temperature"><span>Harorat</span><span class="layer-dot c-danger"></span></label>
+      <label class="layer-row"><input type="checkbox" data-layer="et"><span>Bug'lanish</span><span class="layer-dot c-orange"></span></label>
     </div>
 
     <div class="panel-section">
-      <div class="ps-title">Geography</div>
-      <label class="layer-row"><input type="checkbox" data-layer="elevation"><span>Elevation</span><span class="layer-dot c-grey"></span></label>
-      <label class="layer-row"><input type="checkbox" data-layer="districts"><span>District lines</span><span class="layer-dot c-purple"></span></label>
+      <div class="ps-title">Geografiya</div>
+      <label class="layer-row"><input type="checkbox" data-layer="elevation"><span>Balandlik</span><span class="layer-dot c-grey"></span></label>
+      <label class="layer-row"><input type="checkbox" data-layer="districts"><span>Tuman chegaralari</span><span class="layer-dot c-purple"></span></label>
     </div>
 
     <div class="panel-section">
-      <div class="ps-title">Background</div>
+      <div class="ps-title">Fon</div>
       <div class="bg-toggle" id="bgToggle">
-        <button data-bg="dark" class="active">Dark</button>
-        <button data-bg="satellite">Satellite</button>
-        <button data-bg="street">Street</button>
+        <button data-bg="dark" class="active" type="button">Qorong'u</button>
+        <button data-bg="satellite" type="button">Sun'iy yo'ldosh</button>
+        <button data-bg="street" type="button">Ko'cha</button>
       </div>
       <div class="grid-opacity">
-        <label>Grid opacity</label>
+        <label for="opacityRange">Tarmoq shaffofligi</label>
         <input type="range" min="20" max="90" value="65" id="opacityRange"/>
       </div>
     </div>
 
     <div class="panel-section">
-      <div class="ps-title">Priority queue</div>
-      <div id="priorityList" class="priority-list">Loading…</div>
+      <div class="ps-title">Ustuvor navbat</div>
+      <div id="priorityList" class="priority-list">Yuklanmoqda…</div>
     </div>
   </aside>
 
@@ -117,55 +115,58 @@
       <div class="cell-card" id="cellCard">
         <div class="cc-empty">
           <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.6"><path d="M12 22s-8-4.5-8-12a8 8 0 1116 0c0 7.5-8 12-8 12z"/><circle cx="12" cy="10" r="3"/></svg>
-          <p>Click any 1 km cell to inspect its stats</p>
+          <p>Ma'lumotni ko'rish uchun istalgan 1 km katakni bosing</p>
         </div>
       </div>
 
       <!-- Map legend -->
       <div class="legend" id="legend">
-        <div class="legend-head"><span id="legendLabel">Irrigation Risk Index</span></div>
+        <div class="legend-head"><span id="legendLabel">Stress darajasi</span></div>
         <div class="legend-bar"></div>
-        <div class="legend-labels"><small>Low / Healthy</small><small>High / Stress</small></div>
+        <div class="legend-labels"><small>Past · sog'lom</small><small>Yuqori · stressli</small></div>
       </div>
     </div>
 
-    <!-- BOTTOM STATS STRIP -->
-    <section class="stats-strip" id="statsStrip">
-      <div class="stat-card" id="card-iri">
-        <div class="sc-head"><span class="sc-title">IRI Score</span><span class="sc-tag" data-class>—</span></div>
-        <div class="sc-value"><b data-value>—</b></div>
-        <canvas class="sc-spark" data-spark="iri"></canvas>
+    <!-- BOTTOM STATS STRIP — 6 cards, no IRI, no Crop -->
+    <section class="stats-strip" id="statsStrip" aria-label="Tanlangan katak ko'rsatkichlari">
+      <div class="stat-card" id="card-stress">
+        <div class="sc-head"><span class="sc-title">Stress darajasi</span><span class="sc-tag" data-class>—</span></div>
+        <div class="sc-value sc-value-text"><b data-value>—</b></div>
+        <div class="stress-pill" id="stressPill" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="sc-foot" data-foot>Boshlash uchun katak tanlang</div>
       </div>
       <div class="stat-card" id="card-ndvi">
         <div class="sc-head"><span class="sc-title">NDVI</span></div>
         <div class="sc-value"><b data-value>—</b></div>
-        <canvas class="sc-spark" data-spark="ndvi"></canvas>
+        <div class="sc-spark-wrap"><canvas class="sc-spark" data-spark="ndvi"></canvas></div>
       </div>
       <div class="stat-card" id="card-moisture">
-        <div class="sc-head"><span class="sc-title">Soil Moisture</span></div>
+        <div class="sc-head"><span class="sc-title">Tuproq namligi</span></div>
         <div class="sc-value"><b data-value>—</b><small>%</small></div>
-        <canvas class="sc-spark" data-spark="moisture"></canvas>
+        <div class="sc-spark-wrap"><canvas class="sc-spark" data-spark="moisture"></canvas></div>
       </div>
       <div class="stat-card" id="card-rain">
-        <div class="sc-head"><span class="sc-title">Rainfall 30d</span></div>
+        <div class="sc-head"><span class="sc-title">Yog'in (30 kun)</span></div>
         <div class="sc-value"><b data-value>—</b><small>mm</small></div>
-        <canvas class="sc-spark" data-spark="rainfall"></canvas>
+        <div class="sc-spark-wrap"><canvas class="sc-spark" data-spark="rainfall"></canvas></div>
       </div>
       <div class="stat-card" id="card-temp">
-        <div class="sc-head"><span class="sc-title">Temperature</span></div>
+        <div class="sc-head"><span class="sc-title">Harorat</span></div>
         <div class="sc-value"><b data-value>—</b><small>°C</small></div>
-        <canvas class="sc-spark" data-spark="temperature"></canvas>
+        <div class="sc-spark-wrap"><canvas class="sc-spark" data-spark="temperature"></canvas></div>
       </div>
-      <div class="stat-card" id="card-crop">
-        <div class="sc-head"><span class="sc-title">Dominant Crop</span></div>
-        <div class="sc-value sc-value-text"><b data-value>—</b></div>
-        <div class="sc-foot" data-foot>Pick a cell to begin</div>
+      <div class="stat-card" id="card-et">
+        <div class="sc-head"><span class="sc-title">Bug'lanish (ET)</span></div>
+        <div class="sc-value"><b data-value>—</b><small>mm/kun</small></div>
+        <div class="sc-spark-wrap"><canvas class="sc-spark" data-spark="et"></canvas></div>
       </div>
     </section>
   </main>
 
   <!-- RIGHT: chat panel -->
-  <aside class="panel panel-chat" id="chatPanel">
+  <aside class="panel panel-chat" id="chatPanel" aria-label="Suv bilan suhbat">
     <div class="panel-head">
       <div class="chat-head-info">
         <div class="chat-avatar">
@@ -175,39 +176,40 @@
           </svg>
         </div>
         <div>
-          <h3>Suv <span class="status-dot" id="wsStatus" title="Connecting…"></span></h3>
-          <small>Agricultural advisor · Fergana Valley</small>
+          <h3>Suv <span class="status-dot" id="wsStatus" title="Ulanmoqda…"></span></h3>
+          <small>Qishloq xo'jaligi maslahatchisi · Farg'ona vodiysi</small>
         </div>
       </div>
-      <button class="close-btn" id="chatClose">×</button>
+      <button class="close-btn" id="chatClose" type="button" aria-label="Suhbatni yopish">×</button>
     </div>
 
     <div class="chat-context" id="chatContext">
-      <small>Context</small>
-      <span id="contextLabel">No cell selected — answers will be general.</span>
+      <small>Kontekst</small>
+      <span id="contextLabel">Katak tanlanmadi — javoblar umumiy bo'ladi.</span>
     </div>
 
     <div class="chat-body" id="chatBody">
       <div class="msg msg-ai">
         <div class="msg-bubble">
-          Salom! I'm <b>Suv</b>, your irrigation and agronomy advisor for Fergana Valley.
-          Pick any 1 km cell on the map and ask me anything — what to plant, what pests
-          to watch for, what the IRI score means for the next 72 hours, or what farmers
-          downstream should do.
+          Salom! Men <b>Suv</b>man — Farg'ona vodiysi uchun sug'orish va agronomiya
+          maslahatchisi. Xaritadan istalgan 1 km katakni tanlang va savol bering:
+          nima ekish, qaysi zararkunandalarni kuzatish, keyingi 72 soat uchun
+          stress balli nimani anglatishi yoki quyi tomondagi fermerlar nima qilishi
+          haqida ma'lumot beraman.
         </div>
       </div>
     </div>
 
     <div class="chat-suggestions" id="chatSuggestions">
-      <button class="suggestion">What can I plant here?</button>
-      <button class="suggestion">Pest risks?</button>
-      <button class="suggestion">Irrigation advice</button>
-      <button class="suggestion">Animals that may damage crops?</button>
+      <button class="suggestion" type="button">Bu yerda nima ekishim mumkin?</button>
+      <button class="suggestion" type="button">Zararkunanda xavflari?</button>
+      <button class="suggestion" type="button">Sug'orish maslahati</button>
+      <button class="suggestion" type="button">Zararli hayvonlar?</button>
     </div>
 
     <form class="chat-form" id="chatForm">
-      <textarea id="chatInput" placeholder="Ask Suv anything about this area…" rows="1" maxlength="2000"></textarea>
-      <button type="submit" class="chat-send" id="chatSend" title="Send">
+      <textarea id="chatInput" placeholder="Suv'dan bu hudud haqida so'rang…" rows="1" maxlength="2000" aria-label="Xabar yozish"></textarea>
+      <button type="submit" class="chat-send" id="chatSend" title="Yuborish" aria-label="Yuborish">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
       </button>
     </form>
@@ -224,6 +226,7 @@
     apiCell: "{% url 'dashboard:api_cell' %}",
     apiPriority: "{% url 'dashboard:api_priority' %}",
     wsUrl: (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws/chat/",
+    locale: "uz",
   };
 </script>
 {% endblock %}

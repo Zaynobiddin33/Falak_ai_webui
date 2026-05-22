@@ -153,17 +153,17 @@ def compute_cell(lat: float, lng: float) -> dict:
     district = nearest_district(c_lat, c_lng)
     water, dist_km = nearest_water(c_lat, c_lng)
 
-    # Underlying smooth fields ---------------------------------------------
+    # ─── Underlying smooth fields ─────────────────────────────────────────
+    # NOTE: these formulas are mirrored client-side in static/js/map.js::previewScore
+    # for fast in-browser cell coloring. If you change anything below, update map.js too.
     ndvi_field = 0.45 + 0.35 * _smooth(c_lat, c_lng, freq=18, phase=1.7)   # 0.1 – 0.8
     moisture_field = 0.30 + 0.25 * _smooth(c_lat, c_lng, freq=12, phase=3.1)
     heat_field = 0.5 + 0.3 * _smooth(c_lat, c_lng, freq=8, phase=0.6)      # higher = hotter
     rainfall_field = 0.5 + 0.4 * _smooth(c_lat, c_lng, freq=6, phase=2.4)
 
-    # Reduce moisture far from water
-    water_bonus = max(0, 1.0 - dist_km / 12.0) * 0.18
-    moisture = _bound(moisture_field + water_bonus + (_seed(c_lat, c_lng, "m") - 0.5) * 0.08, 0.04, 0.45)
+    moisture = _bound(moisture_field + (_seed(c_lat, c_lng, "m") - 0.5) * 0.08, 0.04, 0.45)
 
-    ndvi = _bound(ndvi_field + (moisture - 0.25) * 0.4 + (_seed(c_lat, c_lng, "v") - 0.5) * 0.05, 0.05, 0.9)
+    ndvi = _bound(ndvi_field + (moisture - 0.25) * 0.4, 0.05, 0.9)
     ndmi = _bound(ndvi - 0.2 + moisture * 0.4 - 0.1, -0.2, 0.6)
     ndwi = _bound(0.05 + moisture * 0.8 - 0.5, -0.4, 0.6)
 
@@ -173,13 +173,13 @@ def compute_cell(lat: float, lng: float) -> dict:
     et = round(2 + heat_field * 5, 2)                                    # 2..7 mm/day
     elevation_m = int(380 + _seed(c_lat, c_lng, "e") * 700 + max(0, c_lat - 40.6) * 1400)
 
-    # IRI score: combines low moisture, low NDVI, rainfall deficit, high ET, distance to water
+    # Stress / IRI score: combines low moisture, low NDVI, rainfall deficit, high ET.
+    # Mirrored in map.js::previewScore.
     iri = _bound(
         0.45 * (1 - moisture / 0.45)
         + 0.20 * (1 - ndvi)
         + 0.20 * max(0, -rainfall_anomaly_pct) / 100
-        + 0.10 * et / 7
-        + 0.05 * min(1.0, dist_km / 15.0)
+        + 0.15 * et / 7
     )
 
     crop = _pick_crop(c_lat, c_lng, dist_km, elevation_m)
@@ -213,11 +213,11 @@ def compute_cell(lat: float, lng: float) -> dict:
         dominant_crop=crop,
 
         history={
-            "ndvi":     _sparkline(c_lat, c_lng, "h_ndvi", ndvi, 0.06),
-            "moisture": _sparkline(c_lat, c_lng, "h_moist", moisture * 100, 5),
-            "iri":      _sparkline(c_lat, c_lng, "h_iri", iri, 0.08),
-            "rainfall": _sparkline(c_lat, c_lng, "h_rain", rainfall_30d_mm / 30, 1.2),
+            "ndvi":        _sparkline(c_lat, c_lng, "h_ndvi", ndvi, 0.06),
+            "moisture":    _sparkline(c_lat, c_lng, "h_moist", moisture * 100, 5),
+            "rainfall":    _sparkline(c_lat, c_lng, "h_rain", rainfall_30d_mm / 30, 1.2),
             "temperature": _sparkline(c_lat, c_lng, "h_t", temperature_c, 2.5),
+            "et":          _sparkline(c_lat, c_lng, "h_et", et, 0.6),
         },
     )
     return asdict(stats)

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}SuvRadar AI — Satellite foundation model for irrigation risk{% endblock %}
+{% block title %}FALAK — Sun'iy yo'ldosh asosidagi sug'orish modeli{% endblock %}
 {% block body_class %}landing{% endblock %}
 
 {% block head %}
@@ -10,304 +10,332 @@
 
 {% block body %}
 
+<!-- ════════════════════════════════════════ NAV ════════════════════════════════════════ -->
 <nav class="nav">
-  <a href="{% url 'core:landing' %}" class="nav-logo">
-    <span class="logo-mark"></span>
-    <span class="logo-text">SuvRadar<span class="logo-accent">.AI</span></span>
+  <a href="{% url 'core:landing' %}" class="nav-mark" aria-label="FALAK">
+    <span class="mark-dot"></span>FALAK
   </a>
+
   <div class="nav-links">
-    <a href="#problem">Problem</a>
-    <a href="#solution">Solution</a>
-    <a href="#data">Data</a>
+    <a href="#muammo">Muammo</a>
+    <a href="#yechim">Yechim</a>
+    <a href="#malumot">Ma'lumotlar</a>
     <a href="#model">Model</a>
-    <a href="#product">Product</a>
+    <a href="#mahsulot">Mahsulot</a>
   </div>
-  <a href="{% url 'dashboard:dashboard' %}" class="nav-cta">Try Dashboard →</a>
+
+  <div class="nav-actions">
+    <a href="#kontakt" class="link-mono">Aloqa</a>
+    <a href="{% url 'dashboard:dashboard' %}" class="pill">Panelni sinash</a>
+  </div>
 </nav>
 
 <!-- ════════════════════════════════════════ HERO ════════════════════════════════════════ -->
 <section class="hero">
-  <div class="hero-bg">
-    <canvas id="heroCanvas"></canvas>
-    <div class="hero-grid-overlay"></div>
-  </div>
-  <div class="hero-content">
-    <div class="hero-tag">
-      <span class="dot"></span> Fergana Valley pilot · Uzbekistan-scale
-    </div>
-    <h1 class="hero-title">
-      Suv<span class="hero-accent">Radar</span> AI
-    </h1>
-    <p class="hero-sub">
-      Satellite foundation model that predicts <strong>irrigation risk</strong>
-      before it becomes visible in the field.
-    </p>
-    <p class="hero-tagline">
-      We turn <span class="underline-water">satellite data</span> into water decisions.
-    </p>
-    <div class="hero-cta">
-      <a href="{% url 'dashboard:dashboard' %}" class="btn btn-primary">
-        Try the Live Dashboard
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-      </a>
-      <a href="#problem" class="btn btn-ghost">See how it works</a>
-    </div>
-
-    <div class="hero-stats">
-      <div class="stat"><b>1 km</b><span>IRI grid</span></div>
-      <div class="stat"><b>7–14 d</b><span>Forecast horizon</span></div>
-      <div class="stat"><b>7</b><span>Data sources fused</span></div>
-      <div class="stat"><b>2018→25</b><span>Time-travel backtest</span></div>
-    </div>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════ PROBLEM ════════════════════════════════════════ -->
-<section id="problem" class="section section-problem">
-  <div class="section-head">
-    <span class="section-eyebrow">01 · Problem</span>
-    <h2>Irrigation stress is found <span class="text-red">too late</span>.</h2>
-    <p class="section-lead">Raw satellite data exists. Daily irrigation decisions do not.</p>
-  </div>
-  <div class="problem-grid">
-    <div class="problem-card">
-      <div class="problem-icon">💧</div>
-      <h3>Limited water</h3>
-      <p>Central Asia's water budget is shrinking. Every cubic meter must be allocated to the field that needs it most — today, not next week.</p>
-    </div>
-    <div class="problem-card">
-      <div class="problem-icon">🛰️</div>
-      <h3>Late field detection</h3>
-      <p>By the time NDVI drops in optical imagery, the crop is already stressed. We need <em>leading</em> indicators, not lagging ones.</p>
-    </div>
-    <div class="problem-card">
-      <div class="problem-icon">📋</div>
-      <h3>No priority ranking</h3>
-      <p>Districts get blanket water schedules. There is no per-square-kilometer ranking to drive dispatch.</p>
-    </div>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════ SOLUTION ════════════════════════════════════════ -->
-<section id="solution" class="section section-solution">
-  <div class="section-head">
-    <span class="section-eyebrow">02 · Solution</span>
-    <h2>Predict irrigation risk <span class="text-water">before it becomes visible</span>.</h2>
-    <p class="section-lead">Satellite history + weather + water supply → <b>Irrigation Risk Index</b>.</p>
+  <div class="hero-bg" aria-hidden="true">
+    <img src="{% static 'img/hero.jpg' %}" alt="" loading="eager" fetchpriority="high" />
+    <div class="hero-bg-fade"></div>
   </div>
 
-  <div class="solution-flow">
-    <div class="flow-inputs">
-      <div class="flow-input"><span class="flow-bullet">🛰️</span>Satellite history</div>
-      <div class="flow-input"><span class="flow-bullet">🌦️</span>Weather record</div>
-      <div class="flow-input"><span class="flow-bullet">💧</span>Water supply</div>
-    </div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-brain">
-      <div class="brain-core">
-        <svg viewBox="0 0 64 64" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="32" cy="32" r="20"/>
-          <circle cx="32" cy="32" r="4" fill="currentColor"/>
-          <path d="M12 32h8M44 32h8M32 12v8M32 44v8"/>
-          <path d="M18 18l6 6M40 40l6 6M46 18l-6 6M24 40l-6 6"/>
-        </svg>
+  <div class="hero-wrap">
+    <div class="hero-text">
+      <p class="eyebrow"><span class="dot-live"></span>FARG'ONA VODIYSI · O'ZBEKISTON PILOT</p>
+
+      <h1 class="display-xl hero-headline">
+        Suv qarorlari,<br/>sun'iy yo'ldoshdan.
+      </h1>
+
+      <p class="lead">
+        Sug'orish xavfini ko'rinishidan oldin bashorat qiluvchi
+        vizion asos modeli. 1&nbsp;km tarmoq, etti ochiq Yer kuzatuv
+        manbai, vaqt&nbsp;bo'yicha sinov.
+      </p>
+
+      <div class="cta-row">
+        <a href="{% url 'dashboard:dashboard' %}" class="pill">
+          Panelni sinash
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+        <a href="#yechim" class="pill">Texnik hujjat</a>
       </div>
-      <span>SuvRadar-VFM</span>
-    </div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-outputs">
-      <div class="flow-output"><span class="o-tag tag-red">stress mask</span></div>
-      <div class="flow-output"><span class="o-tag tag-grid">1 km IRI grid</span></div>
-      <div class="flow-output"><span class="o-tag tag-blue">priority dispatch</span></div>
-      <div class="flow-output"><span class="o-tag tag-yellow">Telegram alert</span></div>
+
+      <p class="hero-meta">
+        <span>// 1 km grid</span>
+        <span>· 7 manba</span>
+        <span>· 7–14 kun bashorat</span>
+        <span>· 2018→25 backtest</span>
+      </p>
     </div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════ DATA ════════════════════════════════════════ -->
-<section id="data" class="section section-data">
-  <div class="section-head">
-    <span class="section-eyebrow">03 · How we get the data</span>
-    <h2>Seven open Earth-observation streams, fused.</h2>
-    <p class="section-lead">All public, all multi-decade — ingested through Google Earth Engine and harmonized to a 1 km grid.</p>
-  </div>
+<div class="rule"></div>
 
-  <div class="data-grid">
-    <div class="data-card">
-      <div class="data-card-tag">Optical</div>
-      <h4>Sentinel-2</h4>
-      <p>10 m multispectral imagery for vegetation indices (NDVI, NDMI, NDWI).</p>
-    </div>
-    <div class="data-card">
-      <div class="data-card-tag">Radar</div>
-      <h4>Sentinel-1 SAR</h4>
-      <p>Cloud-piercing backscatter to detect surface moisture and water bodies.</p>
-    </div>
-    <div class="data-card">
-      <div class="data-card-tag">Rainfall</div>
-      <h4>CHIRPS</h4>
-      <p>30+ years of daily 5 km precipitation — our rainfall anomaly baseline.</p>
-    </div>
-    <div class="data-card">
-      <div class="data-card-tag">Soil</div>
-      <h4>SMAP</h4>
-      <p>L-band passive radiometer soil moisture, gap-filled and downscaled.</p>
-    </div>
-    <div class="data-card">
-      <div class="data-card-tag">Weather</div>
-      <h4>ERA5</h4>
-      <p>Hourly reanalysis: temperature, wind, humidity, radiation.</p>
-    </div>
-    <div class="data-card">
-      <div class="data-card-tag">ET</div>
-      <h4>WaPOR · MODIS</h4>
-      <p>Actual evapotranspiration — the demand side of the water balance.</p>
-    </div>
-    <div class="data-card data-card-wide">
-      <div class="data-card-tag">Hydrology</div>
-      <h4>OSM + HydroRIVERS</h4>
-      <p>Canal and river network used to compute distance-to-water features.</p>
-    </div>
+<!-- ════════════════════════════════════════ 01 MUAMMO ════════════════════════════════════════ -->
+<section id="muammo" class="band">
+  <header class="band-head">
+    <p class="eyebrow">01 — MUAMMO</p>
+    <h2 class="display-md">Sug'orish stressi juda kech aniqlanadi.</h2>
+    <p class="lead">Xom sun'iy yo'ldosh ma'lumotlari mavjud. Kunlik sug'orish qarorlari esa yo'q.</p>
+  </header>
+
+  <div class="grid grid-3">
+    <article class="card">
+      <p class="caption-mono">01 / SUV</p>
+      <h3 class="display-sm">Cheklangan suv</h3>
+      <p>Markaziy Osiyo suv balansi qisqarmoqda. Har bir kub metr aynan bugun eng zarur dalaga ajratilishi shart.</p>
+    </article>
+    <article class="card">
+      <p class="caption-mono">02 / KUZATUV</p>
+      <h3 class="display-sm">Dalani kech aniqlash</h3>
+      <p>Optik tasvirlarda NDVI pasayganda, ekin allaqachon stressga uchragan. Oldindan ogohlantiruvchi indikator kerak.</p>
+    </article>
+    <article class="card">
+      <p class="caption-mono">03 / USTUVORLIK</p>
+      <h3 class="display-sm">Tartiblash yo'q</h3>
+      <p>Tumanlar yagona suv jadvali oladi. Har bir kvadrat kilometr bo'yicha xavf reytingi mavjud emas.</p>
+    </article>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════ MODEL ════════════════════════════════════════ -->
-<section id="model" class="section section-model">
-  <div class="section-head">
-    <span class="section-eyebrow">04 · Model</span>
-    <h2>SuvRadar-VFM — a vision foundation model for irrigation.</h2>
-    <p class="section-lead">Prithvi-EO backbone, SAR encoder, and tabular climate/water MLPs fuse into a shared latent. Multi-task heads emit every product downstream.</p>
-  </div>
+<div class="rule"></div>
 
-  <div class="model-diagram">
-    <div class="md-col md-col-inputs">
-      <div class="md-block">📸<span>4 time frames</span></div>
-      <div class="md-block">🌈<span>6 S-2 bands</span></div>
-      <div class="md-block">📡<span>S-1 radar</span></div>
-      <div class="md-block">🌡️<span>Climate features</span></div>
-      <div class="md-block">💧<span>Water network</span></div>
-    </div>
-    <div class="md-arrows"></div>
-    <div class="md-col md-col-encoders">
-      <div class="md-block md-block-primary">Prithvi-EO Backbone</div>
-      <div class="md-block md-block-primary">SAR Encoder</div>
-      <div class="md-block">Climate MLP</div>
-      <div class="md-block">Water MLP</div>
-    </div>
-    <div class="md-arrows"></div>
-    <div class="md-fusion">
-      <div class="fusion-ring">Fusion</div>
-    </div>
-    <div class="md-arrows"></div>
-    <div class="md-col md-col-heads">
-      <div class="md-block md-head">Stress Mask</div>
-      <div class="md-block md-head">Water-Change Mask</div>
-      <div class="md-block md-head">Future Moisture</div>
-      <div class="md-block md-head">1 km IRI Score</div>
-      <div class="md-block md-head">Priority Class</div>
-    </div>
-  </div>
+<!-- ════════════════════════════════════════ 02 YECHIM ════════════════════════════════════════ -->
+<section id="yechim" class="band">
+  <header class="band-head">
+    <p class="eyebrow">02 — YECHIM</p>
+    <h2 class="display-md">Sun'iy yo'ldosh tarixi + ob-havo + suv ta'minoti → Sug'orish Xavfi Indeksi.</h2>
+    <p class="lead">Ko'p oqimli ma'lumotlar yagona tarmoq orqali quvvatlantiriladi, 1 km issiqlik xaritasiga aylanadi va to'rt amaliy mahsulotga ajraladi.</p>
+  </header>
 
-  <div class="training-timeline">
-    <div class="tt-pill tt-train"><b>2018–2022</b><span>Train</span></div>
-    <div class="tt-line"></div>
-    <div class="tt-pill tt-val"><b>2023</b><span>Validate</span></div>
-    <div class="tt-line"></div>
-    <div class="tt-pill tt-test"><b>2024–2025</b><span>Backtest</span></div>
-    <div class="tt-caption">Time-travel backtest: predict the future, then compare against satellite evidence.</div>
+  <figure class="figure">
+    <p class="caption-mono">FIG. 01 / WORKFLOW</p>
+    <div class="figure-frame">
+      <img src="{% static 'img/workflow.png' %}" alt="Ma'lumot manbalari neyron tarmoq orqali 1 km IRI xaritasiga aylanadi va keyin stress maskasi, ustuvor dispetcher va Telegram ogohlantirishni chiqaradi." />
+    </div>
+    <figcaption>Stress maskasi · 1 km IRI tarmog'i · Ustuvor dispetcher · Telegram ogohlantirish.</figcaption>
+  </figure>
+</section>
+
+<div class="rule"></div>
+
+<!-- ════════════════════════════════════════ 03 MA'LUMOTLAR ════════════════════════════════════════ -->
+<section id="malumot" class="band">
+  <header class="band-head">
+    <p class="eyebrow">03 — MA'LUMOTLAR</p>
+    <h2 class="display-md">Yetti ochiq Yer kuzatuv oqimi, birlashtirilgan.</h2>
+    <p class="lead">Hammasi ochiq, hammasi o'n yilliklar davomli. Google Earth Engine orqali yig'iladi va 1 km tarmoqqa moslashtiriladi.</p>
+  </header>
+
+  <div class="grid grid-3 grid-data">
+    <article class="card">
+      <p class="caption-mono">01 / OPTIK</p>
+      <h3 class="display-sm">Sentinel-2</h3>
+      <p>10 m ko'p spektrli tasvir — vegetatsiya indekslari (NDVI, NDMI, NDWI) uchun asos.</p>
+      <ul class="card-meta">
+        <li><span>Spektral bandlar</span><b>13</b></li>
+        <li><span>Qayta-tashrif</span><b>5 kun</b></li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <p class="caption-mono">02 / RADAR · TUPROQ</p>
+      <h3 class="display-sm">Sentinel-1 + SMAP</h3>
+      <p>Bulutdan o'tuvchi SAR backscatter va L-band passiv radiometr — yuza namligi va suv ob'ektlari.</p>
+      <ul class="card-meta">
+        <li><span>SAR rejimi</span><b>IW · 10 m</b></li>
+        <li><span>SMAP qatlam</span><b>L3 · 9 km</b></li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <p class="caption-mono">03 / YOG'IN</p>
+      <h3 class="display-sm">CHIRPS</h3>
+      <p>30+ yillik kunlik 5 km yog'in — yog'in anomaliyasi uchun asos chizig'i.</p>
+      <ul class="card-meta">
+        <li><span>O'lchov</span><b>5 km · 1 kun</b></li>
+        <li><span>Arxiv</span><b>1981→</b></li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <p class="caption-mono">04 / OB-HAVO</p>
+      <h3 class="display-sm">ERA5</h3>
+      <p>Soatlik reanaliz — harorat, shamol, namlik, quyosh radiatsiyasi.</p>
+      <ul class="card-meta">
+        <li><span>Qadam</span><b>1 soat · 31 km</b></li>
+        <li><span>O'zgaruvchilar</span><b>240+</b></li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <p class="caption-mono">05 / BUG'LANISH</p>
+      <h3 class="display-sm">WaPOR · MODIS</h3>
+      <p>Haqiqiy evapotranspiratsiya — suv balansining talab tomoni.</p>
+      <ul class="card-meta">
+        <li><span>WaPOR</span><b>100 m · 10 kun</b></li>
+        <li><span>MODIS ET</span><b>500 m · 8 kun</b></li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <p class="caption-mono">06 / GIDROLOGIYA</p>
+      <h3 class="display-sm">OSM + HydroRIVERS</h3>
+      <p>Kanal va daryo tarmog'i — suvgacha bo'lgan masofa xususiyatlari.</p>
+      <ul class="card-meta">
+        <li><span>HydroRIVERS</span><b>15M segment</b></li>
+        <li><span>OSM kanal</span><b>open</b></li>
+      </ul>
+    </article>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════ PRODUCT ════════════════════════════════════════ -->
-<section id="product" class="section section-product">
-  <div class="section-head">
-    <span class="section-eyebrow">05 · Product</span>
-    <h2>From model output to field action — in minutes.</h2>
-    <p class="section-lead">An irrigation command layer that ranks every district, drafts the AI report, and pushes a Telegram confirmation to the farmer.</p>
+<div class="rule"></div>
+
+<!-- ════════════════════════════════════════ 04 MODEL ════════════════════════════════════════ -->
+<section id="model" class="band">
+  <header class="band-head">
+    <p class="eyebrow">04 — MODEL</p>
+    <h2 class="display-md">FALAK-VFM — sug'orish uchun ko'rish asosiy modeli.</h2>
+    <p class="lead">Prithvi-EO o'zagi, SAR kodlovchi va jadval iqlim/suv MLPlari umumiy yashirin vakillikka birlashadi. Ko'p vazifali boshlar pastdagi har bir mahsulotni chiqaradi.</p>
+  </header>
+
+  <div class="model-stack">
+    <figure class="figure">
+      <p class="caption-mono">FIG. 02 / SELF-SUPERVISED PRE-TRAINING</p>
+      <div class="figure-frame">
+        <img src="{% static 'img/architecture.png' %}" alt="Niqoblangan avtoenkoder o'z-o'zini nazorat qiluvchi asos o'qitishi." />
+      </div>
+      <figcaption>Niqoblangan avtoenkoder Yer kuzatuv vakilliklarini o'rganadi — keyin sug'orish vazifalari uchun moslashtiriladi.</figcaption>
+    </figure>
+
+    <figure class="figure">
+      <p class="caption-mono">FIG. 03 / MULTI-TASK FINE-TUNING</p>
+      <div class="figure-frame">
+        <img src="{% static 'img/VFM.png' %}" alt="FALAK-VFM ko'p vazifali boshlar arxitekturasi." />
+      </div>
+      <figcaption>Temporal sun'iy yo'ldosh oqimi va iqlim/suv xususiyatlari birlashib stress segmentatsiyasi, suv-o'zgarish aniqlanishi va IRI regressiyasi boshlarini quvvatlantiradi.</figcaption>
+    </figure>
   </div>
 
-  <div class="product-flow">
-    <div class="pf-step">
-      <div class="pf-num">1</div>
-      <h4>Risk map</h4>
-      <p>1 km heatmap colored by IRI</p>
-    </div>
-    <div class="pf-step">
-      <div class="pf-num">2</div>
-      <h4>Priority list</h4>
-      <p>Districts ranked by hectares at risk</p>
-    </div>
-    <div class="pf-step">
-      <div class="pf-num">3</div>
-      <h4>AI report</h4>
-      <p>Gemini drafts inspection window + actions</p>
-    </div>
-    <div class="pf-step">
-      <div class="pf-num">4</div>
-      <h4>Farmer confirmation</h4>
-      <p>Telegram → "Quva HIGH risk · 72h"</p>
-    </div>
+  <div class="timeline">
+    <span class="timeline-pill">2018–2022 · O'qitish</span>
+    <span class="timeline-line"></span>
+    <span class="timeline-pill">2023 · Tekshirish</span>
+    <span class="timeline-line"></span>
+    <span class="timeline-pill">2024–2025 · Sinov</span>
   </div>
+  <p class="caption-mono caption-center">VAQT BO'YICHA SINOV — KELAJAKNI BASHORAT QIL, SUN'IY YO'LDOSH DALILLARIGA SOLISHTIR</p>
+</section>
 
-  <div class="priority-table">
-    <div class="pt-header">
-      <span>#</span><span>District</span><span>Risk</span><span>Hectares</span><span>Action</span>
-    </div>
-    <div class="pt-row"><span>1</span><span>Quva</span><span class="risk-high">HIGH</span><span>1,250 ha</span><span class="action">inspect 72h</span></div>
-    <div class="pt-row"><span>2</span><span>Yazyavan</span><span class="risk-high">HIGH</span><span>980 ha</span><span class="action">inspect 72h</span></div>
-    <div class="pt-row"><span>3</span><span>Rishton</span><span class="risk-med">MEDIUM</span><span>870 ha</span><span class="action">review 5d</span></div>
-    <div class="pt-row"><span>4</span><span>Dang'ara</span><span class="risk-med">MEDIUM</span><span>760 ha</span><span class="action">review 5d</span></div>
-    <div class="pt-row"><span>5</span><span>Oltiariq</span><span class="risk-med">MEDIUM</span><span>650 ha</span><span class="action">review 5d</span></div>
-    <div class="pt-row"><span>6</span><span>Marg'ilon</span><span class="risk-low">LOW</span><span>540 ha</span><span class="action">monitor</span></div>
+<div class="rule"></div>
+
+<!-- ════════════════════════════════════════ 05 MAHSULOT ════════════════════════════════════════ -->
+<section id="mahsulot" class="band">
+  <header class="band-head">
+    <p class="eyebrow">05 — MAHSULOT</p>
+    <h2 class="display-md">Model natijasidan dala harakatigacha. Daqiqalarda.</h2>
+    <p class="lead">Har bir tumanni tartiblovchi, AI hisobotini tuzuvchi va fermerga Telegram orqali tasdiq yuboruvchi sug'orish boshqaruv qatlami.</p>
+  </header>
+
+  <ol class="steps">
+    <li><span class="step-num">01</span><h4 class="display-sm">Xavf xaritasi</h4><p>IRI bo'yicha rangli 1 km issiqlik xaritasi.</p></li>
+    <li><span class="step-num">02</span><h4 class="display-sm">Ustuvor ro'yxat</h4><p>Tumanlar xavf ostidagi gektarlar bo'yicha tartiblanadi.</p></li>
+    <li><span class="step-num">03</span><h4 class="display-sm">AI hisoboti</h4><p>AI tekshiruv vaqti va harakatlarni tuzadi.</p></li>
+    <li><span class="step-num">04</span><h4 class="display-sm">Fermer tasdiqlovi</h4><p>Telegram → "Quva YUQORI xavf · 72s".</p></li>
+  </ol>
+
+  <div class="ptable">
+    <header>
+      <span>#</span><span>Tuman</span><span>Xavf</span><span>Gektar</span><span>Harakat</span>
+    </header>
+    <div class="pt-row"><span>01</span><span>Quva</span><span class="risk-tag risk-high">Yuqori</span><span>1,250 ga</span><span>72 soat tekshirish</span></div>
+    <div class="pt-row"><span>02</span><span>Yozyovon</span><span class="risk-tag risk-high">Yuqori</span><span>980 ga</span><span>72 soat tekshirish</span></div>
+    <div class="pt-row"><span>03</span><span>Rishton</span><span class="risk-tag risk-med">O'rtacha</span><span>870 ga</span><span>5 kun ko'rib chiqish</span></div>
+    <div class="pt-row"><span>04</span><span>Dang'ara</span><span class="risk-tag risk-med">O'rtacha</span><span>760 ga</span><span>5 kun ko'rib chiqish</span></div>
+    <div class="pt-row"><span>05</span><span>Oltiariq</span><span class="risk-tag risk-med">O'rtacha</span><span>650 ga</span><span>5 kun ko'rib chiqish</span></div>
+    <div class="pt-row"><span>06</span><span>Marg'ilon</span><span class="risk-tag risk-low">Past</span><span>540 ga</span><span>Kuzatish</span></div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════ WHY ════════════════════════════════════════ -->
-<section class="section section-why">
-  <div class="section-head">
-    <span class="section-eyebrow">06 · Why this wins</span>
-    <h2>Not a satellite viewer. <span class="text-water">A trainable irrigation intelligence model.</span></h2>
-  </div>
+<div class="rule"></div>
 
-  <div class="why-grid">
-    <div class="why-card">
-      <div class="why-icon">🛡️</div>
-      <h3>Technical moat</h3>
-      <p>Time-series foundation model, time-travel backtest, weak-label engine — not reproducible with a dashboard.</p>
-    </div>
-    <div class="why-card">
-      <div class="why-icon">🌱</div>
-      <h3>Domain fit</h3>
-      <p>Trained on Uzbekistan crop calendar, Fergana hydrology, regional pest pressure — not a generic EO model.</p>
-    </div>
-    <div class="why-card">
-      <div class="why-icon">🔁</div>
-      <h3>Sellable workflow</h3>
-      <p>Map → list → report → Telegram. Reaches the farmer in the same hour the model runs.</p>
-    </div>
+<!-- ════════════════════════════════════════ 06 NIMA UCHUN ════════════════════════════════════════ -->
+<section id="nima-uchun" class="band">
+  <header class="band-head">
+    <p class="eyebrow">06 — NIMA UCHUN BU G'OLIB</p>
+    <h2 class="display-md">Sun'iy yo'ldosh ko'rsatkichi emas.<br/>O'rgatib bo'ladigan sug'orish aql modeli.</h2>
+  </header>
+
+  <div class="grid grid-3">
+    <article class="card">
+      <p class="caption-mono">01 / TEXNIK</p>
+      <h3 class="display-sm">Texnik ustunlik</h3>
+      <p>Vaqt qatorli asosiy model, vaqt bo'yicha sinov, kuchsiz belgilash dvigateli. Oddiy boshqaruv paneli bilan takrorlab bo'lmaydi.</p>
+    </article>
+    <article class="card">
+      <p class="caption-mono">02 / DOMEN</p>
+      <h3 class="display-sm">Sohaga moslashish</h3>
+      <p>O'zbekiston ekin taqvimida, Farg'ona gidrologiyasida, mintaqaviy zararkunandalar bosimida o'qitilgan. Umumiy EO model emas.</p>
+    </article>
+    <article class="card">
+      <p class="caption-mono">03 / JARAYON</p>
+      <h3 class="display-sm">Sotiladigan jarayon</h3>
+      <p>Xarita → ro'yxat → hisobot → Telegram. Model ishga tushgan o'sha soatda fermerga yetib boradi.</p>
+    </article>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════ FOOTER CTA ════════════════════════════════════════ -->
-<section class="section section-cta">
-  <div class="cta-card">
-    <h2>Pilot: <span class="text-water">Fergana Valley</span> &nbsp;→&nbsp; Scale: <span class="text-water">Uzbekistan</span></h2>
-    <p>Try the live dashboard. Click any 1 km cell to see its IRI score, then ask Suv anything about that field.</p>
-    <a href="{% url 'dashboard:dashboard' %}" class="btn btn-primary btn-lg">
-      Launch the Dashboard
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+<div class="rule"></div>
+
+<!-- ════════════════════════════════════════ CTA ════════════════════════════════════════ -->
+<section class="cta" id="kontakt">
+  <p class="eyebrow">07 — KEYINGI QADAM</p>
+  <h2 class="display-xl">
+    Pilot: Farg'ona vodiysi.<br/>
+    Miqyos: O'zbekiston.
+  </h2>
+  <p class="lead">
+    Jonli panelni sinab ko'ring. Istalgan 1 km katakni bosing va Suv'dan bu dala haqida har narsa so'rang.
+  </p>
+  <div class="cta-row">
+    <a href="{% url 'dashboard:dashboard' %}" class="pill pill-solid">
+      Panelni ochish
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
     </a>
+    <a href="#muammo" class="pill">Yana o'qish</a>
   </div>
 </section>
 
+<!-- ════════════════════════════════════════ FOOTER ════════════════════════════════════════ -->
 <footer class="footer">
-  <div class="footer-inner">
-    <div>
-      <span class="logo-mark"></span>
-      <strong>SuvRadar.AI</strong>
-      <span class="footer-muted">· Falak Project · 2026</span>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a href="{% url 'core:landing' %}" class="nav-mark"><span class="mark-dot"></span>FALAK</a>
+      <p>Sun'iy yo'ldosh ma'lumotlarini suv qarorlariga aylantiramiz.</p>
     </div>
-    <div class="footer-muted">We turn satellite data into water decisions.</div>
+    <div>
+      <p class="caption-mono">MAHSULOT</p>
+      <a href="{% url 'dashboard:dashboard' %}">Jonli panel</a>
+      <a href="#yechim">Yechim</a>
+      <a href="#model">Model</a>
+    </div>
+    <div>
+      <p class="caption-mono">LOYIHA</p>
+      <a href="#malumot">Ma'lumot manbalari</a>
+      <a href="#mahsulot">Mahsulot</a>
+      <a href="#muammo">Muammo</a>
+    </div>
+    <div>
+      <p class="caption-mono">HUDUD</p>
+      <span>Farg'ona vodiysi</span>
+      <span>O'zbekiston</span>
+      <span>2026</span>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p class="caption-mono">© 2026 FALAK · ALL RIGHTS RESERVED</p>
+    <p class="caption-mono">v0.4 · UZBEKISTAN PILOT</p>
   </div>
 </footer>
 

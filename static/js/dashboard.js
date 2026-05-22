@@ -29,18 +29,19 @@
 
   // ─── Priority list ───────────────────────────────────────────
   const listEl = document.getElementById("priorityList");
+  const RISK_UZ = { HIGH: "YUQORI", MEDIUM: "O'RTACHA", LOW: "PAST" };
   fetch(F.apiPriority)
     .then((r) => r.json())
     .then(({ districts }) => {
       if (!districts || !districts.length) {
-        listEl.textContent = "No data";
+        listEl.textContent = "Ma'lumot yo'q";
         return;
       }
       listEl.innerHTML = districts.slice(0, 8).map((d) => `
         <div class="pl-row" data-district="${d.district}">
           <span class="pl-name">${d.district}</span>
-          <span class="pl-risk pl-risk-${d.risk}">${d.risk}</span>
-          <span class="pl-ha">${d.hectares_at_risk.toLocaleString()} ha</span>
+          <span class="pl-risk pl-risk-${d.risk}">${RISK_UZ[d.risk] || d.risk}</span>
+          <span class="pl-ha">${d.hectares_at_risk.toLocaleString()} ga</span>
         </div>
       `).join("");
       listEl.querySelectorAll(".pl-row").forEach((row) => {
@@ -50,7 +51,7 @@
         });
       });
     })
-    .catch((e) => { listEl.textContent = "Failed to load."; console.error(e); });
+    .catch((e) => { listEl.textContent = "Yuklab bo'lmadi."; console.error(e); });
 
   // ─── Mobile drawers ──────────────────────────────────────────
   const backdrop = document.getElementById("dashBackdrop");

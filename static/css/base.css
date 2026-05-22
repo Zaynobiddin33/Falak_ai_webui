@@ -40,7 +40,6 @@
 
   /* type */
   --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-serif: "Playfair Display", Georgia, serif;
   --font-mono: "JetBrains Mono", "SF Mono", Menlo, monospace;
 
   /* radii */
@@ -95,6 +94,16 @@ h1, h2, h3, h4 {
 }
 
 ::selection { background: rgba(33, 150, 255, 0.35); color: #fff; }
+
+/* Accessibility — honor the user's motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 /* ─── Buttons ───────────────────────────────────────────────── */
 .btn {
