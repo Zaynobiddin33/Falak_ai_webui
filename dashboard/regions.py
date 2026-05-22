@@ -4,18 +4,18 @@ Real coordinates (rough centroids) — used by the mock ML generator
 and the map to label cells with their parent district.
 """
 
-# Fergana Valley AOI (roughly: lat 40.0–41.4, lng 70.4–73.2)
+# Full Fergana Valley inference extent from the current 1 km SuvRadar grid.
 AOI = {
     "name": "Fergana Valley",
     "country": "Uzbekistan",
     "bounds": {
-        "south": 40.10,
-        "north": 41.20,
-        "west": 70.50,
-        "east": 73.00,
+        "south": 39.60,
+        "north": 41.70,
+        "west": 69.00,
+        "east": 73.60,
     },
-    "center": {"lat": 40.65, "lng": 71.75},
-    "default_zoom": 9,
+    "center": {"lat": 40.65, "lng": 71.30},
+    "default_zoom": 8,
 }
 
 DISTRICTS = [

@@ -1,0 +1,154 @@
+{
+  "name": "SuvRadar live forecast + anomaly inference cache",
+  "generated_at": "2026-05-22T17:57:55+05:00",
+  "area": "Fergana Valley, Uzbekistan",
+  "grid_cell_size_m": 1000,
+  "source_window": "2024-07-21 to 2024-07-31 latest feature cache",
+  "forecast_source": "Open-Meteo 16-day forecast, quantized to 0.2 degree anchors",
+  "forecast_anchor_count": 264,
+  "seasonal_normals_source": "Oracle 2018-2025 growing-season features, normal years <= 2022",
+  "seasonal_normal_parts": 131,
+  "ui_cells": 119808,
+  "full_fergana_cells": 119808,
+  "model_note": "Live app inference now uses the full LightGBM feature contract: current satellite/weather/soil features, train-year seasonal normal/anomaly columns, and live next-7/14-day forecast forcing.",
+  "h7": {
+    "metrics": {
+      "ready_windows": 248,
+      "expected_windows": 248,
+      "pairable_windows": 240,
+      "pairable_val_windows": 30,
+      "pairable_test_windows": 60,
+      "mae_test": 7.043,
+      "within5_test_percent": 45.03,
+      "within10_test_percent": 76.47,
+      "r2_test": 0.21,
+      "mae_val": 6.398,
+      "within5_val_percent": 48.87,
+      "mae_spatial": 6.775,
+      "within5_spatial_percent": 47.09,
+      "beats_rule_baseline_mae": 0.754,
+      "beats_cell_season_baseline_mae": 0.596
+    },
+    "prediction_distribution": {
+      "rows": 119808,
+      "mean_iri": 49.49,
+      "min_iri": 43.66,
+      "max_iri": 61.71,
+      "risk_classes": {
+        "high": 15993,
+        "watch": 103815,
+        "low": 0
+      }
+    },
+    "inference_summary": {
+      "input": "data/processed/suvradar_latest_with_openmeteo_forecast_anomalies.parquet",
+      "model": "models/lightgbm_future_iri_growing_season_2018_2025_modal_gcs_h7d_forecast_climatology_interim_dir/model.joblib",
+      "output": "data/predictions/suvradar_latest_openmeteo_anomaly_h7.parquet",
+      "rows": 119808,
+      "horizon_days": 7,
+      "model_features": 54,
+      "missing_feature_count": 0,
+      "missing_features": [],
+      "prediction_column": "suvradar_iri_h7",
+      "risk_class_column": "suvradar_risk_class_h7"
+    }
+  },
+  "h14": {
+    "metrics": {
+      "ready_windows": 248,
+      "expected_windows": 248,
+      "pairable_windows": 232,
+      "pairable_val_windows": 29,
+      "pairable_test_windows": 58,
+      "mae_test": 7.236,
+      "within5_test_percent": 45.18,
+      "within10_test_percent": 75.2,
+      "r2_test": 0.195,
+      "mae_val": 6.254,
+      "within5_val_percent": 50.71,
+      "mae_spatial": 6.41,
+      "within5_spatial_percent": 49.8,
+      "beats_rule_baseline_mae": 1.176,
+      "beats_cell_season_baseline_mae": 0.591
+    },
+    "prediction_distribution": {
+      "rows": 119808,
+      "mean_iri": 52.9,
+      "min_iri": 44.84,
+      "max_iri": 64.96,
+      "risk_classes": {
+        "high": 27003,
+        "watch": 92805,
+        "low": 0
+      }
+    },
+    "inference_summary": {
+      "input": "data/processed/suvradar_latest_with_openmeteo_forecast_anomalies.parquet",
+      "model": "models/lightgbm_future_iri_growing_season_2018_2025_modal_gcs_h14d_forecast_climatology_interim_dir/model.joblib",
+      "output": "data/predictions/suvradar_latest_openmeteo_anomaly_h14.parquet",
+      "rows": 119808,
+      "horizon_days": 14,
+      "model_features": 54,
+      "missing_feature_count": 0,
+      "missing_features": [],
+      "prediction_column": "suvradar_iri_h14",
+      "risk_class_column": "suvradar_risk_class_h14"
+    }
+  },
+  "anomaly_summary": {
+    "input": "/tmp/suvradar_live_inputs/suvradar_latest_with_openmeteo_forecast.parquet",
+    "normal_source": "data/processed/suvradar_features_growing_season_2018_2025_interim.parquet",
+    "output": "data/processed/suvradar_latest_with_openmeteo_forecast_anomalies.parquet",
+    "rows": 119808,
+    "normal_source_parts": 131,
+    "normal_end_year": 2022,
+    "columns": [
+      "ndmi",
+      "ndwi",
+      "mndwi",
+      "rainfall_30d_mm",
+      "smap_soil_moisture_am",
+      "era5_temp_2m_max_c",
+      "era5_potential_et_mm"
+    ],
+    "seasonal_normal_columns": [
+      "ndmi_seasonal_normal",
+      "ndwi_seasonal_normal",
+      "mndwi_seasonal_normal",
+      "rainfall_30d_mm_seasonal_normal",
+      "smap_soil_moisture_am_seasonal_normal",
+      "era5_temp_2m_max_c_seasonal_normal",
+      "era5_potential_et_mm_seasonal_normal"
+    ],
+    "anomaly_columns": [
+      "ndmi_anomaly",
+      "ndwi_anomaly",
+      "mndwi_anomaly",
+      "rainfall_30d_mm_anomaly",
+      "smap_soil_moisture_am_anomaly",
+      "era5_temp_2m_max_c_anomaly",
+      "era5_potential_et_mm_anomaly"
+    ],
+    "all_null_output_columns": [],
+    "elapsed_s": 29.31
+  },
+  "artifacts": {
+    "geojson": "/suvradar-static/suvradar/suvradar_latest_fergana_h7_h14_10000.geojson",
+    "point_grid": "/suvradar-static/suvradar/suvradar_latest_fergana_points.json"
+  },
+  "frontend_layer": {
+    "format": "suvradar-point-grid-v1",
+    "cells": 119808,
+    "strategy": "canvas aggregate heat layer at low zoom, real 1 km cells when zoomed in",
+    "url": "/suvradar-static/suvradar/suvradar_latest_fergana_points.json"
+  },
+  "source_extent": "full inference extent from 119,808 1 km cells; map bounds expanded to full Fergana Valley data coverage",
+  "live_weather_source": "Open-Meteo live forecast API, daily past_days=30 and forecast_days=16, quantized to 0.2 degree anchors",
+  "satellite_source_note": "NDVI/NDMI/crop masks are real Earth Engine satellite features from the latest downloaded cache; run a fresh Earth Engine export to make satellite layers current-day.",
+  "live_weather_distribution": {
+    "rain_30d_mm_mean": 97.19,
+    "temp_today_c_mean": 16.43,
+    "et0_today_mm_mean": 3.02,
+    "soil_moisture_mean": 0.275
+  }
+}

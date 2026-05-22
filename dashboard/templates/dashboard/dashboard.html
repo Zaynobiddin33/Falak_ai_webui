@@ -6,7 +6,7 @@
 
 {% block head %}
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=suvradar-20260522b" />
 {% endblock %}
 
 {% block body %}
@@ -30,7 +30,8 @@
 
   <div class="topbar-center">
     <div class="metric-toggle" id="metricToggle" role="tablist" aria-label="Xarita metrikasi">
-      <button data-metric="stress" class="active" role="tab" aria-selected="true">Stress</button>
+      <button data-metric="h7" class="active" role="tab" aria-selected="true">7 kun</button>
+      <button data-metric="h14" role="tab" aria-selected="false">14 kun</button>
       <button data-metric="ndvi" role="tab" aria-selected="false">NDVI</button>
       <button data-metric="moisture" role="tab" aria-selected="false">Namlik</button>
     </div>
@@ -100,6 +101,13 @@
     </div>
 
     <div class="panel-section">
+      <div class="ps-title">Model holati</div>
+      <div id="modelStatus" class="model-status">
+        <div class="ms-row"><span>Kesh</span><b>Yuklanmoqda</b></div>
+      </div>
+    </div>
+
+    <div class="panel-section">
       <div class="ps-title">Ustuvor navbat</div>
       <div id="priorityList" class="priority-list">Yuklanmoqda…</div>
     </div>
@@ -123,7 +131,7 @@
       <div class="legend" id="legend">
         <div class="legend-head"><span id="legendLabel">Stress darajasi</span></div>
         <div class="legend-bar"></div>
-        <div class="legend-labels"><small>Past · sog'lom</small><small>Yuqori · stressli</small></div>
+        <div class="legend-labels"><small>Pastroq stress</small><small>Yuqoriroq stress</small></div>
       </div>
     </div>
 
@@ -220,12 +228,29 @@
 </div>
 
 <script>
+  const falakPrefix = "{{ request.META.SCRIPT_NAME|default:'' }}";
   window.FALAK = {
     aoi: {{ aoi|safe }},
     districts: {{ districts|safe }},
+    prefix: falakPrefix,
     apiCell: "{% url 'dashboard:api_cell' %}",
     apiPriority: "{% url 'dashboard:api_priority' %}",
-    wsUrl: (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws/chat/",
+    apiSuvradarSummary: "{% url 'dashboard:api_suvradar_summary' %}",
+    suvradarGrid: "{% static 'suvradar/suvradar_latest_fergana_points.json' %}",
+    suvradarOverlays: {
+      h7: "{% static 'suvradar/overlays/h7.png' %}?v=suvradar-20260522f",
+      h14: "{% static 'suvradar/overlays/h14.png' %}?v=suvradar-20260522f",
+      ndvi: "{% static 'suvradar/overlays/ndvi.png' %}?v=suvradar-20260522f",
+      moisture: "{% static 'suvradar/overlays/moisture.png' %}?v=suvradar-20260522f",
+    },
+    suvradarOverlayBounds: {
+      south: 39.59774,
+      north: 41.69979,
+      west: 68.99960,
+      east: 73.59897,
+    },
+    suvradarSummary: "{% static 'suvradar/latest_summary.json' %}",
+    wsUrl: (location.protocol === "https:" ? "wss://" : "ws://") + location.host + falakPrefix + "/ws/chat/",
     locale: "uz",
   };
 </script>
@@ -234,8 +259,8 @@
 {% block scripts %}
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="{% static 'js/map.js' %}"></script>
-  <script src="{% static 'js/stats.js' %}"></script>
+  <script src="{% static 'js/map.js' %}?v=suvradar-20260522f"></script>
+  <script src="{% static 'js/stats.js' %}?v=suvradar-20260522f"></script>
   <script src="{% static 'js/chat.js' %}"></script>
-  <script src="{% static 'js/dashboard.js' %}"></script>
+  <script src="{% static 'js/dashboard.js' %}?v=suvradar-20260522f"></script>
 {% endblock %}
