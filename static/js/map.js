@@ -105,28 +105,32 @@
     return v(cell, "h7", 50) / 100;
   }
 
-  function lodStride() {
+  function lodConfig() {
     const zoom = map.getZoom();
-    if (zoom < 8.2) return 40;
-    if (zoom < 9.2) return 18;
-    if (zoom < 10.2) return 9;
-    if (zoom < 11.2) return 5;
-    if (zoom < 12.2) return 3;
-    if (zoom < 13.2) return 2;
-    return 1;
+    if (zoom < 8.8) return { stride: 180, shape: "dot", size: 2.2, alpha: 0.14 };
+    if (zoom < 9.7) return { stride: 95, shape: "dot", size: 2.4, alpha: 0.20 };
+    if (zoom < 10.7) return { stride: 45, shape: "dot", size: 2.8, alpha: 0.28 };
+    if (zoom < 11.7) return { stride: 18, shape: "dot", size: 3.2, alpha: 0.38 };
+    if (zoom < 12.6) return { stride: 7, shape: "rect", size: 6, alpha: 0.56 };
+    if (zoom < 13.4) return { stride: 3, shape: "rect", size: 8, alpha: 0.66 };
+    return { stride: 1, shape: "rect", size: null, alpha: 0.78 };
   }
 
-  function cellSizePx(stride) {
+  function sampleCell(cell, stride) {
+    if (stride <= 1) return true;
+    const latKey = Math.round(v(cell, "lat") * 1000);
+    const lonKey = Math.round(v(cell, "lon") * 1000);
+    const hash = Math.abs((latKey * 73856093) ^ (lonKey * 19349663));
+    return hash % stride === 0;
+  }
+
+  function cellSizePx(config) {
+    if (config.size) return config.size;
     const zoom = map.getZoom();
-    if (zoom < 9.2) return 3;
-    if (zoom < 10.2) return 4;
-    if (zoom < 11.2) return 5;
-    if (zoom < 12.2) return 7;
-    if (zoom < 13.2) return 9;
     const center = map.getCenter();
     const a = map.latLngToContainerPoint(center);
     const b = map.latLngToContainerPoint([center.lat, center.lng + 0.01]);
-    return Math.max(8, Math.min(28, Math.abs(b.x - a.x) * 0.9 * Math.sqrt(stride)));
+    return Math.max(8, Math.min(28, Math.abs(b.x - a.x) * 0.9));
   }
 
   function resizeCanvas() {
@@ -153,21 +157,28 @@
     if (!cells.length) return;
 
     const bounds = map.getBounds().pad(0.08);
-    const stride = lodStride();
-    const px = cellSizePx(stride);
+    const config = lodConfig();
+    const px = cellSizePx(config);
     const half = px / 2;
-    const alpha = gridOpacity * (stride > 8 ? 0.52 : stride > 2 ? 0.68 : 0.82);
+    const alpha = gridOpacity * config.alpha;
 
     ctx.globalAlpha = alpha;
-    for (let i = 0; i < cells.length; i += stride) {
+    for (let i = 0; i < cells.length; i += 1) {
       const cell = cells[i];
+      if (!sampleCell(cell, config.stride)) continue;
       const lat = v(cell, "lat");
       const lon = v(cell, "lon");
       if (!bounds.contains([lat, lon])) continue;
       const point = map.latLngToContainerPoint([lat, lon]);
       if (point.x < -px || point.y < -px || point.x > size.x + px || point.y > size.y + px) continue;
       ctx.fillStyle = scoreToColor(metricScore(cell));
-      ctx.fillRect(Math.round(point.x - half), Math.round(point.y - half), px, px);
+      if (config.shape === "dot") {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, px, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillRect(Math.round(point.x - half), Math.round(point.y - half), px, px);
+      }
     }
 
     if (selectedCell) {
