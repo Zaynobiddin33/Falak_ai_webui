@@ -1,6 +1,6 @@
 {
   "name": "SuvRadar live forecast + anomaly inference cache",
-  "generated_at": "2026-05-22T16:50:00+05:00",
+  "generated_at": "2026-05-22T17:57:55+05:00",
   "area": "Fergana Valley, Uzbekistan",
   "grid_cell_size_m": 1000,
   "source_window": "2024-07-21 to 2024-07-31 latest feature cache",
@@ -8,8 +8,8 @@
   "forecast_anchor_count": 264,
   "seasonal_normals_source": "Oracle 2018-2025 growing-season features, normal years <= 2022",
   "seasonal_normal_parts": 131,
-  "ui_cells": 4079,
-  "full_fergana_cells": 33916,
+  "ui_cells": 119808,
+  "full_fergana_cells": 119808,
   "model_note": "Live app inference now uses the full LightGBM feature contract: current satellite/weather/soil features, train-year seasonal normal/anomaly columns, and live next-7/14-day forecast forcing.",
   "h7": {
     "metrics": {
@@ -30,13 +30,14 @@
       "beats_cell_season_baseline_mae": 0.596
     },
     "prediction_distribution": {
-      "rows": 33916,
-      "mean_iri": 49.77,
-      "min_iri": 44.98,
-      "max_iri": 61.68,
+      "rows": 119808,
+      "mean_iri": 49.49,
+      "min_iri": 43.66,
+      "max_iri": 61.71,
       "risk_classes": {
-        "high": 14493,
-        "watch": 19423
+        "high": 15993,
+        "watch": 103815,
+        "low": 0
       }
     },
     "inference_summary": {
@@ -71,13 +72,14 @@
       "beats_cell_season_baseline_mae": 0.591
     },
     "prediction_distribution": {
-      "rows": 33916,
-      "mean_iri": 51.61,
-      "min_iri": 45.81,
-      "max_iri": 64.24,
+      "rows": 119808,
+      "mean_iri": 52.9,
+      "min_iri": 44.84,
+      "max_iri": 64.96,
       "risk_classes": {
-        "high": 24359,
-        "watch": 9557
+        "high": 27003,
+        "watch": 92805,
+        "low": 0
       }
     },
     "inference_summary": {
@@ -131,12 +133,22 @@
     "elapsed_s": 29.31
   },
   "artifacts": {
-    "geojson": "/suvradar-static/suvradar/suvradar_latest_fergana_h7_h14_10000.geojson"
+    "geojson": "/suvradar-static/suvradar/suvradar_latest_fergana_h7_h14_10000.geojson",
+    "point_grid": "/suvradar-static/suvradar/suvradar_latest_fergana_points.json"
   },
   "frontend_layer": {
     "format": "suvradar-point-grid-v1",
-    "cells": 33916,
-    "strategy": "canvas LOD: sampled when zoomed out, denser cells when zoomed in",
+    "cells": 119808,
+    "strategy": "canvas aggregate heat layer at low zoom, real 1 km cells when zoomed in",
     "url": "/suvradar-static/suvradar/suvradar_latest_fergana_points.json"
+  },
+  "source_extent": "full inference extent from 119,808 1 km cells; map bounds expanded to full Fergana Valley data coverage",
+  "live_weather_source": "Open-Meteo live forecast API, daily past_days=30 and forecast_days=16, quantized to 0.2 degree anchors",
+  "satellite_source_note": "NDVI/NDMI/crop masks are real Earth Engine satellite features from the latest downloaded cache; run a fresh Earth Engine export to make satellite layers current-day.",
+  "live_weather_distribution": {
+    "rain_30d_mm_mean": 97.19,
+    "temp_today_c_mean": 16.43,
+    "et0_today_mm_mean": 3.02,
+    "soil_moisture_mean": 0.275
   }
 }

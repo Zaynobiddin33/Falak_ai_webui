@@ -107,21 +107,12 @@
 
   function lodConfig() {
     const zoom = map.getZoom();
-    if (zoom < 8.8) return { stride: 180, shape: "dot", size: 2.2, alpha: 0.14 };
-    if (zoom < 9.7) return { stride: 95, shape: "dot", size: 2.4, alpha: 0.20 };
-    if (zoom < 10.7) return { stride: 45, shape: "dot", size: 2.8, alpha: 0.28 };
-    if (zoom < 11.7) return { stride: 18, shape: "dot", size: 3.2, alpha: 0.38 };
-    if (zoom < 12.6) return { stride: 7, shape: "rect", size: 6, alpha: 0.56 };
-    if (zoom < 13.4) return { stride: 3, shape: "rect", size: 8, alpha: 0.66 };
-    return { stride: 1, shape: "rect", size: null, alpha: 0.78 };
-  }
-
-  function sampleCell(cell, stride) {
-    if (stride <= 1) return true;
-    const latKey = Math.round(v(cell, "lat") * 1000);
-    const lonKey = Math.round(v(cell, "lon") * 1000);
-    const hash = Math.abs((latKey * 73856093) ^ (lonKey * 19349663));
-    return hash % stride === 0;
+    if (zoom < 9.2) return { mode: "aggregate", bin: 13, alpha: 0.58 };
+    if (zoom < 10.4) return { mode: "aggregate", bin: 10, alpha: 0.64 };
+    if (zoom < 11.8) return { mode: "aggregate", bin: 8, alpha: 0.70 };
+    if (zoom < 12.8) return { mode: "cell", stride: 3, size: 7, alpha: 0.72 };
+    if (zoom < 13.6) return { mode: "cell", stride: 2, size: 9, alpha: 0.78 };
+    return { mode: "cell", stride: 1, size: null, alpha: 0.82 };
   }
 
   function cellSizePx(config) {
@@ -131,6 +122,50 @@
     const a = map.latLngToContainerPoint(center);
     const b = map.latLngToContainerPoint([center.lat, center.lng + 0.01]);
     return Math.max(8, Math.min(28, Math.abs(b.x - a.x) * 0.9));
+  }
+
+  function drawAggregateGrid(bounds, size, config) {
+    const buckets = new Map();
+    const bin = config.bin;
+    for (const cell of cells) {
+      const lat = v(cell, "lat");
+      const lon = v(cell, "lon");
+      if (!bounds.contains([lat, lon])) continue;
+      const point = map.latLngToContainerPoint([lat, lon]);
+      if (point.x < -bin || point.y < -bin || point.x > size.x + bin || point.y > size.y + bin) continue;
+      const bx = Math.floor(point.x / bin);
+      const by = Math.floor(point.y / bin);
+      const key = `${bx}:${by}`;
+      const bucket = buckets.get(key) || { x: bx * bin, y: by * bin, score: 0, count: 0 };
+      bucket.score += metricScore(cell);
+      bucket.count += 1;
+      buckets.set(key, bucket);
+    }
+
+    ctx.globalAlpha = gridOpacity * config.alpha;
+    for (const bucket of buckets.values()) {
+      ctx.fillStyle = scoreToColor(bucket.score / bucket.count);
+      ctx.fillRect(bucket.x, bucket.y, bin + 0.6, bin + 0.6);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawCellGrid(bounds, size, config) {
+    const px = cellSizePx(config);
+    const half = px / 2;
+    ctx.globalAlpha = gridOpacity * config.alpha;
+    for (let i = 0; i < cells.length; i += config.stride) {
+      const cell = cells[i];
+      const lat = v(cell, "lat");
+      const lon = v(cell, "lon");
+      if (!bounds.contains([lat, lon])) continue;
+      const point = map.latLngToContainerPoint([lat, lon]);
+      if (point.x < -px || point.y < -px || point.x > size.x + px || point.y > size.y + px) continue;
+      ctx.fillStyle = scoreToColor(metricScore(cell));
+      ctx.fillRect(Math.round(point.x - half), Math.round(point.y - half), px, px);
+    }
+    ctx.globalAlpha = 1;
+    return px;
   }
 
   function resizeCanvas() {
@@ -158,28 +193,9 @@
 
     const bounds = map.getBounds().pad(0.08);
     const config = lodConfig();
-    const px = cellSizePx(config);
-    const half = px / 2;
-    const alpha = gridOpacity * config.alpha;
-
-    ctx.globalAlpha = alpha;
-    for (let i = 0; i < cells.length; i += 1) {
-      const cell = cells[i];
-      if (!sampleCell(cell, config.stride)) continue;
-      const lat = v(cell, "lat");
-      const lon = v(cell, "lon");
-      if (!bounds.contains([lat, lon])) continue;
-      const point = map.latLngToContainerPoint([lat, lon]);
-      if (point.x < -px || point.y < -px || point.x > size.x + px || point.y > size.y + px) continue;
-      ctx.fillStyle = scoreToColor(metricScore(cell));
-      if (config.shape === "dot") {
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, px, 0, Math.PI * 2);
-        ctx.fill();
-      } else {
-        ctx.fillRect(Math.round(point.x - half), Math.round(point.y - half), px, px);
-      }
-    }
+    const px = config.mode === "aggregate"
+      ? (drawAggregateGrid(bounds, size, config), config.bin)
+      : drawCellGrid(bounds, size, config);
 
     if (selectedCell) {
       const p = map.latLngToContainerPoint([v(selectedCell, "lat"), v(selectedCell, "lon")]);
