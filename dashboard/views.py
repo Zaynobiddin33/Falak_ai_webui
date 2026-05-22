@@ -1,5 +1,7 @@
 import json
 import math
+import urllib.parse
+import urllib.request
 from functools import lru_cache
 from pathlib import Path
 
@@ -68,8 +70,81 @@ def _crop_label(row):
     return "Bare / pasture"
 
 
-def _series(base, spread, n=30):
-    return [round(base + math.sin(i * 0.42) * spread, 3) for i in range(n)]
+def _flat_series(base, n=30):
+    return [round(base, 3) for _ in range(n)]
+
+
+def _last_n(values, n=30):
+    values = [value for value in values if value is not None]
+    values = values[-n:]
+    if len(values) < n:
+        values = ([values[0]] * (n - len(values))) + values if values else [0.0] * n
+    return [round(_as_float(value), 3) for value in values]
+
+
+def _daily_means_from_hourly(times, values, n=30):
+    grouped = {}
+    for timestamp, value in zip(times or [], values or []):
+        if value is None:
+            continue
+        grouped.setdefault(str(timestamp)[:10], []).append(_as_float(value))
+    days = []
+    for date in sorted(grouped):
+        day_values = grouped[date]
+        days.append(sum(day_values) / max(1, len(day_values)))
+    return _last_n(days, n=n)
+
+
+@lru_cache(maxsize=1024)
+def _open_meteo_history(lat_key, lng_key):
+    query = urllib.parse.urlencode({
+        "latitude": lat_key,
+        "longitude": lng_key,
+        "daily": ",".join([
+            "precipitation_sum",
+            "temperature_2m_max",
+            "et0_fao_evapotranspiration",
+        ]),
+        "hourly": "soil_moisture_9_to_27cm",
+        "past_days": 30,
+        "forecast_days": 1,
+        "timezone": "auto",
+    })
+    url = f"https://api.open-meteo.com/v1/forecast?{query}"
+    with urllib.request.urlopen(url, timeout=4) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+
+    daily = payload.get("daily") or {}
+    hourly = payload.get("hourly") or {}
+    return {
+        "rainfall": _last_n(daily.get("precipitation_sum") or []),
+        "temperature": _last_n(daily.get("temperature_2m_max") or []),
+        "et": _last_n(daily.get("et0_fao_evapotranspiration") or []),
+        "moisture": [
+            round(value * 100, 3)
+            for value in _daily_means_from_hourly(
+                hourly.get("time") or [],
+                hourly.get("soil_moisture_9_to_27cm") or [],
+            )
+        ],
+    }
+
+
+def _real_history(lat, lng, ndvi, moisture_pct, rainfall, temperature, et):
+    fallback = {
+        "ndvi": _flat_series(ndvi),
+        "moisture": _flat_series(moisture_pct),
+        "rainfall": _flat_series(rainfall / 30 if rainfall else 0.0),
+        "temperature": _flat_series(temperature),
+        "et": _flat_series(et),
+    }
+    try:
+        history = _open_meteo_history(round(lat, 2), round(lng, 2))
+    except Exception:
+        return fallback
+
+    history["ndvi"] = fallback["ndvi"]
+    return history
 
 
 @lru_cache(maxsize=1)
@@ -164,13 +239,7 @@ def _cell_to_stats(row, horizon_days=7):
         "distance_to_water_km": round(distance_km, 2),
         "nearest_water": water["name"],
         "dominant_crop": _crop_label(row),
-        "history": {
-            "ndvi": _series(ndvi, 0.035),
-            "moisture": _series(moisture_pct, 2.2),
-            "rainfall": _series(rainfall / 30 if rainfall else 0.0, 0.4),
-            "temperature": _series(temperature, 1.4),
-            "et": _series(et, 0.35),
-        },
+        "history": _real_history(lat, lng, ndvi, moisture_pct, rainfall, temperature, et),
     }
 
 

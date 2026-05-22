@@ -51,7 +51,7 @@
 
   const canvas = L.DomUtil.create("canvas", "suvradar-canvas-layer");
   canvas.style.pointerEvents = "none";
-  canvas.style.zIndex = "420";
+  canvas.style.zIndex = "430";
   map.getPanes().overlayPane.appendChild(canvas);
   const ctx = canvas.getContext("2d", { alpha: true });
 
@@ -61,7 +61,24 @@
   let currentMetric = "h7";
   let gridOpacity = 0.65;
   let drawTimer = null;
+  let metricDomains = {};
+  let gridStep = { lat: 0.00898, lon: 0.00898 };
   const cachedCells = new Map();
+  const overlayBoundsConfig = F.suvradarOverlayBounds || F.aoi.bounds;
+  const overlayBounds = [
+    [overlayBoundsConfig.south, overlayBoundsConfig.west],
+    [overlayBoundsConfig.north, overlayBoundsConfig.east],
+  ];
+  const rasterOverlay = L.imageOverlay(
+    F.suvradarOverlays?.[currentMetric] || F.suvradarOverlays?.h7,
+    overlayBounds,
+    {
+      opacity: gridOpacity,
+      zIndex: 420,
+      className: "suvradar-raster-overlay",
+      interactive: false,
+    }
+  ).addTo(map);
 
   function n(value, fallback = 0) {
     const number = Number(value);
@@ -74,14 +91,7 @@
     return index == null ? fallback : n(cell[index], fallback);
   }
 
-  function scoreToColor(score) {
-    const stops = [
-      [0.0, [22, 163, 74]],
-      [0.2, [74, 222, 128]],
-      [0.45, [250, 204, 21]],
-      [0.7, [249, 115, 22]],
-      [1.0, [185, 28, 28]],
-    ];
+  function rampColor(score, stops) {
     score = Math.max(0, Math.min(1, score));
     let lo = stops[0], hi = stops[stops.length - 1];
     for (let i = 0; i < stops.length - 1; i++) {
@@ -98,74 +108,133 @@
     return `rgb(${r},${g},${blue})`;
   }
 
-  function metricScore(cell) {
-    if (currentMetric === "h14") return v(cell, "h14", 50) / 100;
-    if (currentMetric === "ndvi") return Math.max(0, Math.min(1, v(cell, "ndvi", 0.35)));
-    if (currentMetric === "moisture") return Math.max(0, Math.min(1, v(cell, "sm", 0.18) / 0.45));
-    return v(cell, "h7", 50) / 100;
+  function stressColor(score) {
+    return rampColor(score, [
+      [0.0, [22, 163, 74]],
+      [0.2, [74, 222, 128]],
+      [0.45, [250, 204, 21]],
+      [0.7, [249, 115, 22]],
+      [1.0, [185, 28, 28]],
+    ]);
+  }
+
+  function metricValue(cell, metric = currentMetric) {
+    if (metric === "h14") return v(cell, "h14", 50);
+    if (metric === "ndvi") return v(cell, "ndvi", 0.35);
+    if (metric === "moisture") return v(cell, "sm", 0.18);
+    return v(cell, "h7", 50);
+  }
+
+  function percentile(sorted, p) {
+    if (!sorted.length) return 0;
+    const index = Math.min(sorted.length - 1, Math.max(0, Math.floor((sorted.length - 1) * p)));
+    return sorted[index];
+  }
+
+  function median(values) {
+    if (!values.length) return 0;
+    const sorted = values.slice().sort((a, b) => a - b);
+    return sorted[Math.floor(sorted.length / 2)];
+  }
+
+  function computeGridStep() {
+    const lats = Array.from(new Set(cells.map((cell) => Number(v(cell, "lat").toFixed(5))))).sort((a, b) => a - b);
+    const lons = Array.from(new Set(cells.map((cell) => Number(v(cell, "lon").toFixed(5))))).sort((a, b) => a - b);
+    const latDiffs = [];
+    const lonDiffs = [];
+    for (let i = 0; i < lats.length - 1; i++) {
+      const diff = lats[i + 1] - lats[i];
+      if (diff > 0.001 && diff < 0.02) latDiffs.push(diff);
+    }
+    for (let i = 0; i < lons.length - 1; i++) {
+      const diff = lons[i + 1] - lons[i];
+      if (diff > 0.001 && diff < 0.02) lonDiffs.push(diff);
+    }
+    gridStep = {
+      lat: median(latDiffs) || 0.00898,
+      lon: median(lonDiffs) || 0.00898,
+    };
+  }
+
+  function computeMetricDomains() {
+    const domains = {};
+    ["h7", "h14", "ndvi", "moisture"].forEach((metric) => {
+      const values = cells
+        .map((cell) => metricValue(cell, metric))
+        .filter((value) => Number.isFinite(value) && value > -999);
+      values.sort((a, b) => a - b);
+      let lo = percentile(values, metric === "h7" || metric === "h14" ? 0.02 : 0.04);
+      let hi = percentile(values, metric === "h7" || metric === "h14" ? 0.98 : 0.96);
+      if (!Number.isFinite(lo) || !Number.isFinite(hi) || Math.abs(hi - lo) < 0.001) {
+        lo = Math.min(...values, 0);
+        hi = Math.max(...values, 1);
+      }
+      if (Math.abs(hi - lo) < 0.001) hi = lo + 1;
+      domains[metric] = { lo, hi };
+    });
+    metricDomains = domains;
+  }
+
+  function normalizedMetricScore(cell, metric = currentMetric) {
+    const domain = metricDomains[metric] || { lo: 0, hi: metric === "h7" || metric === "h14" ? 100 : 1 };
+    return Math.max(0, Math.min(1, (metricValue(cell, metric) - domain.lo) / (domain.hi - domain.lo)));
+  }
+
+  function metricColor(score) {
+    if (currentMetric === "ndvi") {
+      return rampColor(score, [
+        [0.0, [120, 83, 44]],
+        [0.45, [234, 179, 8]],
+        [1.0, [22, 163, 74]],
+      ]);
+    }
+    if (currentMetric === "moisture") {
+      return rampColor(score, [
+        [0.0, [185, 28, 28]],
+        [0.45, [250, 204, 21]],
+        [1.0, [14, 165, 233]],
+      ]);
+    }
+    return stressColor(score);
   }
 
   function lodConfig() {
     const zoom = map.getZoom();
-    if (zoom < 9.2) return { mode: "aggregate", bin: 13, alpha: 0.58 };
-    if (zoom < 10.4) return { mode: "aggregate", bin: 10, alpha: 0.64 };
-    if (zoom < 11.8) return { mode: "aggregate", bin: 8, alpha: 0.70 };
-    if (zoom < 12.8) return { mode: "cell", stride: 3, size: 7, alpha: 0.72 };
-    if (zoom < 13.6) return { mode: "cell", stride: 2, size: 9, alpha: 0.78 };
-    return { mode: "cell", stride: 1, size: null, alpha: 0.82 };
+    if (zoom < 8.4) return { alpha: 0.72 };
+    if (zoom < 10.2) return { alpha: 0.66 };
+    if (zoom < 12.2) return { alpha: 0.60 };
+    return { alpha: 0.54 };
   }
 
-  function cellSizePx(config) {
-    if (config.size) return config.size;
-    const zoom = map.getZoom();
-    const center = map.getCenter();
-    const a = map.latLngToContainerPoint(center);
-    const b = map.latLngToContainerPoint([center.lat, center.lng + 0.01]);
-    return Math.max(8, Math.min(28, Math.abs(b.x - a.x) * 0.9));
+  function cellRect(cell) {
+    const lat = Array.isArray(cell) ? v(cell, "lat") : n(cell.lat);
+    const lon = Array.isArray(cell) ? v(cell, "lon") : n(cell.lng ?? cell.lon);
+    const nw = map.latLngToContainerPoint([lat + gridStep.lat / 2, lon - gridStep.lon / 2]);
+    const se = map.latLngToContainerPoint([lat - gridStep.lat / 2, lon + gridStep.lon / 2]);
+    return {
+      x: Math.floor(Math.min(nw.x, se.x)),
+      y: Math.floor(Math.min(nw.y, se.y)),
+      w: Math.max(1, Math.ceil(Math.abs(se.x - nw.x))),
+      h: Math.max(1, Math.ceil(Math.abs(se.y - nw.y))),
+    };
   }
 
-  function drawAggregateGrid(bounds, size, config) {
-    const buckets = new Map();
-    const bin = config.bin;
+  function drawCellGrid(bounds, size, config) {
+    ctx.globalAlpha = gridOpacity * config.alpha;
     for (const cell of cells) {
       const lat = v(cell, "lat");
       const lon = v(cell, "lon");
       if (!bounds.contains([lat, lon])) continue;
-      const point = map.latLngToContainerPoint([lat, lon]);
-      if (point.x < -bin || point.y < -bin || point.x > size.x + bin || point.y > size.y + bin) continue;
-      const bx = Math.floor(point.x / bin);
-      const by = Math.floor(point.y / bin);
-      const key = `${bx}:${by}`;
-      const bucket = buckets.get(key) || { x: bx * bin, y: by * bin, score: 0, count: 0 };
-      bucket.score += metricScore(cell);
-      bucket.count += 1;
-      buckets.set(key, bucket);
-    }
-
-    ctx.globalAlpha = gridOpacity * config.alpha;
-    for (const bucket of buckets.values()) {
-      ctx.fillStyle = scoreToColor(bucket.score / bucket.count);
-      ctx.fillRect(bucket.x, bucket.y, bin + 0.6, bin + 0.6);
+      const { x, y, w, h } = cellRect(cell);
+      if (x > size.x || y > size.y || x + w < 0 || y + h < 0) continue;
+      ctx.fillStyle = metricColor(normalizedMetricScore(cell));
+      ctx.fillRect(x, y, w, h);
     }
     ctx.globalAlpha = 1;
-  }
-
-  function drawCellGrid(bounds, size, config) {
-    const px = cellSizePx(config);
-    const half = px / 2;
-    ctx.globalAlpha = gridOpacity * config.alpha;
-    for (let i = 0; i < cells.length; i += config.stride) {
-      const cell = cells[i];
-      const lat = v(cell, "lat");
-      const lon = v(cell, "lon");
-      if (!bounds.contains([lat, lon])) continue;
-      const point = map.latLngToContainerPoint([lat, lon]);
-      if (point.x < -px || point.y < -px || point.x > size.x + px || point.y > size.y + px) continue;
-      ctx.fillStyle = scoreToColor(metricScore(cell));
-      ctx.fillRect(Math.round(point.x - half), Math.round(point.y - half), px, px);
-    }
-    ctx.globalAlpha = 1;
-    return px;
+    const center = map.getCenter();
+    const nw = map.latLngToContainerPoint([center.lat + gridStep.lat / 2, center.lng - gridStep.lon / 2]);
+    const se = map.latLngToContainerPoint([center.lat - gridStep.lat / 2, center.lng + gridStep.lon / 2]);
+    return Math.max(8, Math.min(72, Math.max(Math.abs(se.x - nw.x), Math.abs(se.y - nw.y))));
   }
 
   function resizeCanvas() {
@@ -189,42 +258,25 @@
     resizeCanvas();
     const size = map.getSize();
     ctx.clearRect(0, 0, size.x, size.y);
-    if (!cells.length) return;
+    if (!selectedCell) return;
 
-    const bounds = map.getBounds().pad(0.08);
-    const config = lodConfig();
-    const px = config.mode === "aggregate"
-      ? (drawAggregateGrid(bounds, size, config), config.bin)
-      : drawCellGrid(bounds, size, config);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, size.x, size.y);
+    ctx.clip();
 
-    if (selectedCell) {
-      const p = map.latLngToContainerPoint([v(selectedCell, "lat"), v(selectedCell, "lon")]);
-      const selectedSize = Math.max(12, px + 4);
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(
-        Math.round(p.x - selectedSize / 2),
-        Math.round(p.y - selectedSize / 2),
-        selectedSize,
-        selectedSize
-      );
-    }
+    const rect = cellRect(selectedCell);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(rect.x - 1, rect.y - 1, rect.w + 2, rect.h + 2);
 
+    ctx.restore();
     ctx.globalAlpha = 1;
   }
 
   async function loadGrid() {
-    try {
-      const res = await fetch(F.suvradarGrid);
-      if (!res.ok) throw new Error(`grid fetch failed: ${res.status}`);
-      const data = await res.json();
-      field = Object.fromEntries(data.fields.map((name, index) => [name, index]));
-      cells = data.cells || [];
-      drawGrid();
-    } catch (e) {
-      console.error(e);
-    }
+    drawGrid();
   }
 
   function riskClass(rawIri) {
@@ -248,8 +300,8 @@
     return "Bare / pasture";
   }
 
-  function series(base, spread) {
-    return Array.from({ length: 30 }, (_, i) => Number((base + Math.sin(i * 0.42) * spread).toFixed(3)));
+  function flatSeries(base) {
+    return Array(30).fill(Number(base.toFixed(3)));
   }
 
   function cellToStats(cell) {
@@ -286,11 +338,11 @@
       nearest_water: "Farg'ona irrigation network",
       dominant_crop: cropLabel(cell),
       history: {
-        ndvi: series(v(cell, "ndvi", 0.35), 0.035),
-        moisture: series(moisture, 2.2),
-        rainfall: series(rainfall / 30, 0.4),
-        temperature: series(temp, 1.4),
-        et: series(v(cell, "et", 4), 0.35),
+        ndvi: flatSeries(v(cell, "ndvi", 0.35)),
+        moisture: flatSeries(moisture),
+        rainfall: flatSeries(rainfall / 30),
+        temperature: flatSeries(temp),
+        et: flatSeries(v(cell, "et", 4)),
       },
     };
   }
@@ -323,6 +375,22 @@
     renderCellCard(stats);
     if (window.FalakStats) window.FalakStats.update(stats);
     if (window.FalakChat) window.FalakChat.setCellContext(stats);
+  }
+
+  async function selectLatLng(latlng) {
+    const horizon = currentMetric === "h14" ? 14 : 7;
+    try {
+      const res = await fetch(`${F.apiCell}?lat=${latlng.lat}&lng=${latlng.lng}&horizon=${horizon}`);
+      if (!res.ok) return;
+      const stats = await res.json();
+      selectedCell = { lat: stats.lat, lng: stats.lng };
+      drawGrid();
+      renderCellCard(stats);
+      if (window.FalakStats) window.FalakStats.update(stats);
+      if (window.FalakChat) window.FalakChat.setCellContext(stats);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   function nearestCell(latlng) {
@@ -384,9 +452,10 @@
   window.FalakMap = {
     setMetric(metric) {
       currentMetric = metric;
+      if (F.suvradarOverlays?.[metric]) rasterOverlay.setUrl(F.suvradarOverlays[metric]);
       updateLegend(metric);
       drawGrid();
-      if (selectedCell) selectCell(selectedCell);
+      if (selectedCell) selectLatLng(selectedCell);
     },
     setBackground(name) {
       if (!tilesByName[name] || name === currentBg) return;
@@ -396,6 +465,7 @@
     },
     setOpacity(pct) {
       gridOpacity = pct / 100;
+      rasterOverlay.setOpacity(gridOpacity);
       drawGrid();
     },
     focusDistrict(name) {
@@ -408,8 +478,7 @@
 
   map.on("moveend zoomend resize", scheduleDraw);
   map.on("click", (event) => {
-    const cell = nearestCell(event.latlng);
-    if (cell) selectCell(cell);
+    selectLatLng(event.latlng);
   });
 
   const months = ["yan", "fev", "mar", "apr", "may", "iyun", "iyul", "avg", "sen", "okt", "noy", "dek"];

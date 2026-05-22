@@ -285,6 +285,9 @@ body.dash {
   height: 100%;
 }
 .leaflet-container { background: #050810 !important; font-family: var(--font-sans); }
+.suvradar-raster-overlay {
+  image-rendering: pixelated;
+}
 
 /* Cell card floating */
 .cell-card {

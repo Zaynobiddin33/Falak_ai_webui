@@ -131,7 +131,7 @@
       <div class="legend" id="legend">
         <div class="legend-head"><span id="legendLabel">Stress darajasi</span></div>
         <div class="legend-bar"></div>
-        <div class="legend-labels"><small>Past · sog'lom</small><small>Yuqori · stressli</small></div>
+        <div class="legend-labels"><small>Pastroq stress</small><small>Yuqoriroq stress</small></div>
       </div>
     </div>
 
@@ -237,6 +237,18 @@
     apiPriority: "{% url 'dashboard:api_priority' %}",
     apiSuvradarSummary: "{% url 'dashboard:api_suvradar_summary' %}",
     suvradarGrid: "{% static 'suvradar/suvradar_latest_fergana_points.json' %}",
+    suvradarOverlays: {
+      h7: "{% static 'suvradar/overlays/h7.png' %}?v=suvradar-20260522f",
+      h14: "{% static 'suvradar/overlays/h14.png' %}?v=suvradar-20260522f",
+      ndvi: "{% static 'suvradar/overlays/ndvi.png' %}?v=suvradar-20260522f",
+      moisture: "{% static 'suvradar/overlays/moisture.png' %}?v=suvradar-20260522f",
+    },
+    suvradarOverlayBounds: {
+      south: 39.59774,
+      north: 41.69979,
+      west: 68.99960,
+      east: 73.59897,
+    },
     suvradarSummary: "{% static 'suvradar/latest_summary.json' %}",
     wsUrl: (location.protocol === "https:" ? "wss://" : "ws://") + location.host + falakPrefix + "/ws/chat/",
     locale: "uz",
@@ -247,8 +259,8 @@
 {% block scripts %}
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="{% static 'js/map.js' %}?v=suvradar-20260522b"></script>
-  <script src="{% static 'js/stats.js' %}?v=suvradar-20260522b"></script>
+  <script src="{% static 'js/map.js' %}?v=suvradar-20260522f"></script>
+  <script src="{% static 'js/stats.js' %}?v=suvradar-20260522f"></script>
   <script src="{% static 'js/chat.js' %}"></script>
-  <script src="{% static 'js/dashboard.js' %}?v=suvradar-20260522b"></script>
+  <script src="{% static 'js/dashboard.js' %}?v=suvradar-20260522f"></script>
 {% endblock %}
