@@ -5,6 +5,33 @@
 (function () {
   const F = window.FALAK;
 
+  // ─── Real model summary ─────────────────────────────────────
+  const modelStatus = document.getElementById("modelStatus");
+  if (modelStatus && F.apiSuvradarSummary) {
+    fetch(F.apiSuvradarSummary)
+      .then((r) => r.json())
+      .then((summary) => {
+        if (!summary || summary.status === "missing") {
+          modelStatus.innerHTML = `<div class="ms-row"><span>Kesh</span><b>Yo'q</b></div>`;
+          return;
+        }
+        const h7 = summary.h7?.metrics || {};
+        const h14 = summary.h14?.metrics || {};
+        modelStatus.innerHTML = `
+          <div class="ms-row"><span>Kataklar</span><b>${Number(summary.full_fergana_cells || 0).toLocaleString()}</b></div>
+          <div class="ms-row"><span>7 kun MAE</span><b>${h7.mae_test ?? "—"}</b></div>
+          <div class="ms-row"><span>7 kun ±5</span><b>${h7.within5_test_percent ?? "—"}%</b></div>
+          <div class="ms-row"><span>14 kun MAE</span><b>${h14.mae_test ?? "—"}</b></div>
+          <div class="ms-row"><span>14 kun ±5</span><b>${h14.within5_test_percent ?? "—"}%</b></div>
+          <p class="ms-note">Jonli inference · 1 km tarmoq · 2018-2025 growing-season model</p>
+        `;
+      })
+      .catch((e) => {
+        modelStatus.innerHTML = `<div class="ms-row"><span>Kesh</span><b>Xato</b></div>`;
+        console.error(e);
+      });
+  }
+
   // ─── Metric toggle ───────────────────────────────────────────
   document.querySelectorAll("#metricToggle button").forEach((btn) => {
     btn.addEventListener("click", () => {

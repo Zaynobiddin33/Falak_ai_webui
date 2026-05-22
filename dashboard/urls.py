@@ -9,4 +9,5 @@ urlpatterns = [
     path("api/cell/", views.api_cell, name="api_cell"),
     path("api/priority/", views.api_priority, name="api_priority"),
     path("api/aoi/", views.api_aoi, name="api_aoi"),
+    path("api/suvradar/summary/", views.api_suvradar_summary, name="api_suvradar_summary"),
 ]

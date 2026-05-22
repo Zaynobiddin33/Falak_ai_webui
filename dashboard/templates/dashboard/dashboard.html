@@ -30,7 +30,8 @@
 
   <div class="topbar-center">
     <div class="metric-toggle" id="metricToggle" role="tablist" aria-label="Xarita metrikasi">
-      <button data-metric="stress" class="active" role="tab" aria-selected="true">Stress</button>
+      <button data-metric="h7" class="active" role="tab" aria-selected="true">7 kun</button>
+      <button data-metric="h14" role="tab" aria-selected="false">14 kun</button>
       <button data-metric="ndvi" role="tab" aria-selected="false">NDVI</button>
       <button data-metric="moisture" role="tab" aria-selected="false">Namlik</button>
     </div>
@@ -96,6 +97,13 @@
       <div class="grid-opacity">
         <label for="opacityRange">Tarmoq shaffofligi</label>
         <input type="range" min="20" max="90" value="65" id="opacityRange"/>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="ps-title">Model holati</div>
+      <div id="modelStatus" class="model-status">
+        <div class="ms-row"><span>Kesh</span><b>Yuklanmoqda</b></div>
       </div>
     </div>
 
@@ -220,12 +228,17 @@
 </div>
 
 <script>
+  const falakPrefix = "{{ request.META.SCRIPT_NAME|default:'' }}";
   window.FALAK = {
     aoi: {{ aoi|safe }},
     districts: {{ districts|safe }},
+    prefix: falakPrefix,
     apiCell: "{% url 'dashboard:api_cell' %}",
     apiPriority: "{% url 'dashboard:api_priority' %}",
-    wsUrl: (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws/chat/",
+    apiSuvradarSummary: "{% url 'dashboard:api_suvradar_summary' %}",
+    suvradarGrid: "{% static 'suvradar/suvradar_latest_fergana_points.json' %}",
+    suvradarSummary: "{% static 'suvradar/latest_summary.json' %}",
+    wsUrl: (location.protocol === "https:" ? "wss://" : "ws://") + location.host + falakPrefix + "/ws/chat/",
     locale: "uz",
   };
 </script>
@@ -234,7 +247,7 @@
 {% block scripts %}
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="{% static 'js/map.js' %}"></script>
+  <script src="{% static 'js/map.js' %}?v=canvas-lod-20260522"></script>
   <script src="{% static 'js/stats.js' %}"></script>
   <script src="{% static 'js/chat.js' %}"></script>
   <script src="{% static 'js/dashboard.js' %}"></script>
