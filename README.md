@@ -319,6 +319,3 @@ Stack ichida boshqa hech narsani o'zgartirish kerak emas — front-end aynan shu
 
 ---
 
-## Litsenziya
-
-MIT. FALAK · 2026.
